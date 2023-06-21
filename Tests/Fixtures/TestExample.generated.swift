@@ -696,8 +696,6 @@ private struct _CommerceArgs: Codable, Hashable {
 }
 
 /// Feature representing a page that contains commerce buttons
-/// @deprecated reason
-@available(*, deprecated, message: "reason")
 struct Commerce: FeatureProtocol {
     static let name = "Commerce"
 

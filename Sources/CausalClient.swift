@@ -16,6 +16,7 @@ public final class CausalClient {
     @RequiredOnce(description: "impression server URL", resettable: true)
     public var impressionServer: URL
 
+    /// The current session.
     @RequiredOnce(description: "session", resettable: true)
     public var session: any SessionProtocol
 
