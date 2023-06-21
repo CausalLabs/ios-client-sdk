@@ -7,13 +7,13 @@ Pod::Spec.new do |p|
   p.documentation_url = "https://causallabs.github.io/ios-client-sdk"
 
   p.homepage = "https://www.causallabs.io"
-  p.license = { :file => "LICENSE.txt" }
+  p.license = "LICENSE.txt"
   p.author = { "Causal Labs, Inc." => "support@causallabs.io" }
 
   p.source = { :git => "https://github.com/causallabs/ios-client-sdk.git", :tag => p.version }
-  p.source_files = "Sources/**/*.swift"
+  p.source_files = "Sources/**/*.swift", "compiler/**/*"
+  p.ios.exclude_files = "compiler/**/*"
 
   p.ios.deployment_target = "13.0"
   p.swift_version = "5.8"
-  p.requires_arc = true
 end
