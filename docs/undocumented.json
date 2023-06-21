@@ -1,0 +1,33 @@
+{
+  "warnings": [
+    {
+      "file": "/Users/jsq/Work/Fullsend/CausalLabs/ios-client-sdk/Sources/CausalClient.swift",
+      "line": 20,
+      "symbol": "CausalClient.session",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/jsq/Work/Fullsend/CausalLabs/ios-client-sdk/Sources/CausalError.swift",
+      "line": 22,
+      "symbol": "CausalError.localizedDescription",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/jsq/Work/Fullsend/CausalLabs/ios-client-sdk/Sources/FeatureProtocol.swift",
+      "line": 19,
+      "symbol": "FeatureProtocol.impressionIds",
+      "symbol_kind": "source.lang.swift.decl.var.instance",
+      "warning": "undocumented"
+    },
+    {
+      "file": "/Users/jsq/Work/Fullsend/CausalLabs/ios-client-sdk/Sources/JSONProcessor.swift",
+      "line": 7,
+      "symbol": "JSONObject",
+      "symbol_kind": "source.lang.swift.decl.typealias",
+      "warning": "undocumented"
+    }
+  ],
+  "source_directory": "/Users/jsq/Work/Fullsend/CausalLabs/ios-client-sdk"
+}
