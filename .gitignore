@@ -1,9 +1,9 @@
 # macOS
 .DS_Store
 
-# Distribution packaging
-*.zip
-causalc-bundled/compiler/
+# jazzy docs
+ docs/docsets/
+ build/
 
 # ruby tools
 .bundle/
