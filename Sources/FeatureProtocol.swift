@@ -15,7 +15,7 @@ public protocol FeatureProtocol: Hashable, Codable {
     /// Whether or not this feature is active.
     var isActive: Bool { get set }
 
-    // The impression id associated with this feature.
+    /// The impression ids associated with this feature.
     var impressionIds: [ImpressionId] { get set }
 
     /// Serializes the feature arguments to JSON.

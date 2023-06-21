@@ -4,6 +4,7 @@
 
 import Foundation
 
+/// Describes a JSON object.
 public typealias JSONObject = [String: AnyHashable]
 
 struct JSONProcessor {

@@ -11,6 +11,7 @@ DEST="platform=iOS Simulator,name=iPhone 14,OS=latest"
 
 make compiler
 
+echo "Running unit tests..."
 xcodebuild clean test \
     -project CausalLabsSDK.xcodeproj \
     -scheme CausalLabsSDK \
@@ -25,8 +26,7 @@ make lint
 
 # some iOS only developers won't have the server built and running
 # TODO: set up a shared environment to hit for these tests
-if [ -n "$CAUSAL_EMAIL" ]; then
-
+if [ -n "${CAUSAL_EMAIL:-}" ]; then
     ./scripts/start-servers.sh
 
     xcodebuild clean test \

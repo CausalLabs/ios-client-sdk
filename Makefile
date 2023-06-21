@@ -4,7 +4,12 @@ SELF_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
 .PHONY: compiler
 compiler:
-	cd "$(SELF_DIR)../.."; ./gradlew :compiler:installDist
+	@echo "Building the compiler..."
+	@cd "$(SELF_DIR)../.."; ./gradlew :compiler:installDist
+	@echo "Copying the compiler to native/ios/compiler/ ..."
+	@rm -r "$(SELF_DIR)compiler/"; mkdir compiler
+	@cp -r "$(SELF_DIR)../../compiler/build/install/compiler/." "$(SELF_DIR)/compiler/"
+	@echo "Make compiler finished."
 
 .PHONY: fdl-gen
 fdl-gen:
@@ -29,3 +34,7 @@ example:
 .PHONY: test
 test:
 	./scripts/test.sh
+
+.PHONY: docs
+docs:
+	./scripts/docs.zsh

@@ -19,6 +19,7 @@ public enum CausalError: Error, CustomStringConvertible {
     /// - Parameter error: The underlying error, if available.
     case networkResponse(request: URLRequest, response: HTTPURLResponse, error: Error?)
 
+    /// :nodoc:
     public var localizedDescription: String {
         var description = "\(type(of: self)):\n"
         var underlyingError: Error?

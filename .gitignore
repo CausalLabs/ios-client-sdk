@@ -2,8 +2,8 @@
 .DS_Store
 
 # jazzy docs
-docs/docsets/
-build/
+docs/docsets
+build
 
 # ruby tools
 .bundle/
