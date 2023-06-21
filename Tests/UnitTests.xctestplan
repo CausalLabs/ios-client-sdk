@@ -1,0 +1,35 @@
+{
+  "configurations" : [
+    {
+      "id" : "B0713C3C-F252-4900-8C6C-D5607EC7C35C",
+      "name" : "TestScheme",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:CausalLabsSDK.xcodeproj",
+          "identifier" : "0B8E0D2329E8836100D19CA9",
+          "name" : "CausalLabsSDK"
+        }
+      ]
+    },
+    "testExecutionOrdering" : "random",
+    "testRepetitionMode" : "retryOnFailure",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:CausalLabsSDK.xcodeproj",
+        "identifier" : "0B8E0D2B29E8836200D19CA9",
+        "name" : "CausalLabsSDKTests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -1,0 +1,27 @@
+{
+  "configurations" : [
+    {
+      "id" : "D6354BDF-9F84-4BE0-A033-AB93AFA01B5C",
+      "name" : "TestScheme",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testExecutionOrdering" : "random",
+    "testRepetitionMode" : "retryOnFailure",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:CausalLabsSDK.xcodeproj",
+        "identifier" : "9C2EBA052A37DA9400F3A6B8",
+        "name" : "RealServerTests"
+      }
+    }
+  ],
+  "version" : 1
+}

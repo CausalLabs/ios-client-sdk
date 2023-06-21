@@ -1,0 +1,317 @@
+"""
+Describes a rating box that we can put on various product pages
+to collect ratings from our users.
+"""
+feature RatingBox {
+    args {
+        "The product for which we are collecting ratings."
+        productName: String!
+
+        "The price of the product for which we are collecting ratings."
+        productPrice: Float!
+
+        "The description of the product, if any."
+        productDescription: String
+    }
+
+    output {
+        "The prompts for the user to rate the product."
+        callToAction: String! = "Rate this product!"
+
+        "The button text for the user submit a review."
+        actionButton: String! = "Send Review"
+    }
+
+    "Occurs each time a rating is collected."
+    event Rating {
+        "The rating value from the user."
+        stars: Int!
+    }
+}
+
+"An empty feature"
+feature ProductInfo { }
+
+"Class that is used to represent a currency amount"
+enum Currency @deprecated( reason: "Do not use this. Money is evil." )
+{
+    "United States Dollars"
+    USD @deprecated( reason: "Unite socialist democrats!!" )
+    "Euros"
+    EUR
+}
+
+"Defines a product price."
+type Price {
+    "The currency type."
+    currency: Currency! @deprecated( reason: "deprecate" )
+
+    "The amount."
+    amount: Float!
+}
+
+"A color enum."
+enum Color
+{
+    PRIMARY,
+    SECONDARY,
+    WARNING,
+    ERROR
+}
+
+"A feature with a nested object"
+feature ProductDisplay {
+    args {
+        "The name."
+        productName: String!
+
+        "TODO: This currently does not work with json handling"
+        price: Price!
+    }
+}
+
+event ProductClick
+{
+    productid : String!
+}
+
+"Feature representing a page that contains commerce buttons"
+feature Commerce
+@no_gate
+@deprecated( reason: "reason" )
+{
+    output
+    {
+        "Material UI palette color for commerce buttons"
+        commerceButtonColor: Color! = PRIMARY
+        ctaText: String! = "View Deal" @deprecated( reason: "reason" )
+        nullable: String = "non null default value"
+    }
+    "This represents a click on a commence button, leading to a partner."
+    event CommerceClick @deprecated( reason: "I don't know why" )
+    {
+        import ProductClick
+        price: Price
+    }
+}
+
+feature Feature_with_underscores {
+    output {
+        a_value: String! = "value"
+    }
+}
+
+feature featureThatStartsWithLowercase {
+    output {
+        a_value: String! = "value"
+    }
+}
+
+type CustomerData
+{
+    zip: String!
+    productViews: Int!
+    lastViews: [String!]!
+}
+
+abstract feature CrossSellRoot
+{
+    plugin java "ComputeCrossSell" {
+         ## this result is only used if the jar is not available.
+         customerData: CustomerData! = {zip: "02445", productViews: 1, lastViews: ["123","456"]}
+    }
+
+    output {
+        baseOnly: String! = "base"
+    }
+}
+
+feature CrossSell
+{
+    import CrossSellRoot
+    args {
+        "The locationid for the source product in an item based collaborative filter"
+        productId: String!
+        price: Price
+        withDefault: String = "another default"
+    }
+    output {
+        crosssellProductids: [String!]! = ["60745"]
+        nullable: String = "default response"
+    }
+    event CrossSellClick
+    {
+        import ProductClick
+    }    
+    event EventA {
+        anInt: Int = 7
+    }
+}
+
+feature CrossSell2
+{
+    import CrossSellRoot
+    args {
+        "The locationid for the source product in an item based collaborative filter"
+        productId: String!
+        price: Price
+    }
+    output {
+        crosssellProductids: [String!]! = ["60745"]
+        two: String! = "two"
+    }
+    event CrossSellClick
+    {
+        import ProductClick
+    }
+}
+
+
+feature CrossSellDefaultOff
+@off_by_default
+{
+    import CrossSellRoot
+    args {
+        "The locationid for the source product in an item based collaborative filter"
+        productId: String!
+        price: Price
+    }
+    output {
+        crosssellProductids: [String!]! = ["60745"]
+    }
+    event CrossSellClick
+    {
+        import ProductClick
+    }
+}
+
+type NestedObject
+{
+    float1: Float!,
+    int1: Int!
+}
+
+type TopLevelObject
+{
+    float1: Float!,
+    float2: Float,
+    enum1: Color!,
+    enum2: Color
+    string1: String!,
+    string2: String,
+    int1: Int!,
+    int2: Int,
+    nested1: NestedObject!,
+    nested2: NestedObject,
+}
+
+type DumbObject
+{
+    a: Int!
+}
+
+feature Test
+{
+    args {
+        obj1: TopLevelObject!,
+        obj2: TopLevelObject,
+        obj3: TopLevelObject =
+        {
+            float1: 2.0,
+            enum1: SECONDARY,
+            string1: "FOO",
+            int1: 4,
+            int2: null,
+            nested1: {float1: 3.0, int1: 7}
+        },
+        float1: Float! = 0.0,
+        float2: Float,
+        enum1: Color! = PRIMARY,
+        enum2: Color,
+        string1: String! = "",
+        string2: String,
+        int1: Int! = 0,
+        int2: Int,
+    }
+    output {
+        obj1Out: TopLevelObject! = {
+            float1: 1.0,
+            enum1: PRIMARY,
+            string1: "ABC",
+            int1: 1,
+            int2: null,
+            nested1: {float1: 11.0, int1: -1}
+        },
+        obj2Out : TopLevelObject,
+        float1Out : Float! = 1.0,
+        float2Out : Float,
+        enum1Out : Color! = PRIMARY,
+        enum2Out : Color,
+        string1Out : String! = "",
+        string2Out : String,
+        int1Out : Int! = 0,
+        int2Out : Int,
+    }
+    event Click {
+        obj1: TopLevelObject!,
+        obj2: TopLevelObject,
+        float1: Float! = 0.0,
+        float2: Float,
+        enum1: Color! = PRIMARY,
+        enum2: Color,
+        string1: String! = "",
+        string2: String,
+        int1: Int! = 0,
+        int2: Int,
+    }
+
+}
+
+## inheritance checking
+abstract feature BaseFeature1
+{
+    args {
+        arg1 : String!
+        arg2 : Int!
+    }
+    output {
+        out1 : String! = ""
+        out2 : Int! = 0
+    }
+}
+
+feature DerivedFeature
+{
+    import BaseFeature1
+
+}
+
+session {
+    args {
+        userId: String
+        deviceId: ID! @persistent_key
+        required: Int!
+        optional: String
+        withDefault: String = "a default value"
+    }
+
+    event TrackUser {
+        timestamp: Int!
+    }
+
+    ## events can also be defined at the top level. They generate an appropriate mutation
+    "The user has added a productid to the cart"
+    event AddToCart {
+        productid: String!
+        price: Price
+    }
+
+    event AddToCart2 @deprecated( reason: "for some reason" ) {
+        productid: String!
+        price: Price
+    }
+
+    event EventZ {
+        anInt: Int = 11
+    }
+}
