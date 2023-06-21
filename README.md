@@ -1,10 +1,32 @@
-# iOS SDK
+# Causal Labs iOS SDK
 
-- [iOS SDK Proposal](https://docs.google.com/document/d/1N2HHAPCkbt7b92FJebdLGIe-TFTDP_NI4DJp9TJiQ7I/)
+The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with native iOS apps.
 
-## Environment setup
+## Requirements
 
-This describes the minimal setup necessary for building and running the compiler in order to work on the iOS SDK.
+- iOS 13.0+
+- Swift 5.8+
+- Xcode 14.0+
+
+## Package Installation
+
+### [CocoaPods](http://cocoapods.org)
+
+````ruby
+pod 'CausalLabsSDK', '~> 0.1.0'
+````
+
+### [Swift Package Manager](https://swift.org/package-manager/)
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/CausalLabs/ios-client-sdk.git", from: "0.1.0")
+]
+```
+
+Alternatively, you can add the package [directly via Xcode](https://developer.apple.com/documentation/xcode/adding_package_dependencies_to_your_app).
+
+## Causal Compiler Configuration
 
 1. Install Java 11 (via homebrew)
 
@@ -21,19 +43,20 @@ export CPPFLAGS="-I/usr/local/opt/openjdk@11/include $CPPFLAGS"
 
 > **Note**
 >
-> Depending on your machine configuration, `java` may be located somewhere else. Determine this by running `which java`.
+> Homebrew should indicate the path to `java` when installation completes.
 >
-> You may need to replace the path `/usr/local/opt/openjdk@11/libexec/openjdk.jdk` if your Java installation location varies.
+> Depending on your machine configuration, `java` may be located somewhere else.
+> If so, you need to replace the path `/usr/local/opt/openjdk@11/libexec/openjdk.jdk` to correspond to your Java installation location.
+
+3. Verify `java` is successfully installed and in your `PATH`
 
 ```bash
 $ which java
 /usr/local/opt/openjdk@11/bin/java
 ```
 
-3. Verify `java` is successfully installed and in your `PATH`
-
 ```bash
-$ java -version                                                                                                                            X
+$ java -version
 openjdk version "11.0.18" 2023-01-17
 OpenJDK Runtime Environment Homebrew (build 11.0.18+0)
 OpenJDK 64-Bit Server VM Homebrew (build 11.0.18+0, mixed mode)
@@ -45,100 +68,18 @@ OpenJDK 64-Bit Server VM Homebrew (build 11.0.18+0, mixed mode)
 sudo ln -s /usr/local/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-11.jdk
 ```
 
-5. Install other utilities
+## Xcode Project Configuration
 
-**Install [SwiftLint](https://github.com/realm/SwiftLint/releases/latest)**
+> TODO: explain adding build script phase
 
-```bash
-brew install swiftlint
-```
+## Documentation
 
-**Install [xcpretty](https://github.com/xcpretty/xcpretty)**
+- [iOS SDK documentation](https://causallabs.github.io/ios-client-sdk)
 
-```bash
-gem install xcpretty
-```
+- [Causal reference documentation](https://tech.causallabs.io/docs/index)
 
-**Install [jazzy](https://github.com/realm/jazzy)**
+## License
 
-```bash
-gem install jazzy
-```
+See `LICENSE.txt` for details.
 
-## Development Workflow
-
-1. Modify the `.mustache` templates for iOS, found in [`parser/src/main/resources/`](https://github.com/CausalLabs/causal/tree/main/parser/src/main/resources).
-
-```bash
-make template
-```
-
-2. Build the compiler.
-
-```bash
-make build-compiler
-```
-
-3. Invoke the compiler, passing in a `.fdl` file and `.swift` file:
-
-```bash
-$ ./compiler/build/install/compiler/bin/compiler --swift file.swift file.fdl
-```
-
-This will produce generated code in `file.swift` based on the provided `file.fdl`.
-
-## Client Setup
-
-Steps for clients to try it out upon receiving the zip file.
-
-### Prerequisites
-
-1. [Xcode](https://developer.apple.com/xcode/resources/) (14.0 or above)
-1. [Bundler](https://bundler.io)
-1. [Homebrew](https://brew.sh)
-1. [rbenv](https://github.com/rbenv/rbenv)
-
-### Prerequisite directions
-
-#### Install [homebrew](https://docs.brew.sh/Installation)
-
-Don't forget to run "Next Steps" at end of homebrew output:
-
-```console
-echo '# Set PATH, MANPATH, etc., for Homebrew.' >> ~/.zprofile
-echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
-eval "$(/opt/homebrew/bin/brew shellenv)"
-```
-
-#### Install rbenv
-
-Install [rbenv via homebrew](https://github.com/rbenv/rbenv#homebrew):
-
-```console
-brew install rbenv
-```
-
-Use `rbenv` to install Ruby 3.1.2 or higher:
-
-```console
-rbenv install 3.1.2
-rbenv global 3.1.2
-```
-
-Configure your shell to load `rbenv`:
-
-```
-echo 'eval "$(~/.rbenv/bin/rbenv init - zsh)"' >> ~/.zshrc
-```
-
-#### Install `bundler`
-
-```console
-gem install bundler
-```
-
-#### Install [CocoaPods](https://cocoapods.org)
-
-```console
-gem install cocoapods
-```
+> **Copyright © 2023-present Causal Labs, Inc. All rights reserved.**

@@ -1,0 +1,47 @@
+
+"""
+Describes a rating box that we can put on various product pages
+to collect ratings from our users.
+"""
+feature RatingBox {
+    args {
+        "The product for which we are collecting ratings."
+        product: String!
+    }
+
+    output {
+        "The prompts for the user to rate the product."
+        callToAction: String! = "Rate this product!"
+
+        "The button text for the user submit a review."
+        actionButton: String! = "Send Review"
+    }
+
+    "Occurs each time a rating is collected."
+    event Rating {
+        stars: Int!
+    }
+}
+
+"An empty feature to use only as a kill switch"
+feature ProductInfo {}
+
+"""
+Another feature just for demonstration purposes
+"""
+feature Feature2 {
+    args {
+        "Example args"
+        exampleArg: String!
+    }
+
+    output {
+        "Example output"
+        exampleOutput: String! = "Example output"
+    }
+
+    "Example event"
+    event ExampleEvent {
+        data: String!
+    }
+}
