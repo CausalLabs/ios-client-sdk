@@ -12,7 +12,7 @@ Pod::Spec.new do |p|
 
   p.source = { :git => "https://github.com/causallabs/ios-client-sdk.git", :tag => p.version }
   p.source_files = "Sources/**/*.swift"
-  p.ios.resource_bundle = { "CausalCompiler" => "compiler/**/*" }
+  p.preserve_paths = "compiler/**/*"
 
   p.ios.deployment_target = "13.0"
   p.swift_version = "5.8"
