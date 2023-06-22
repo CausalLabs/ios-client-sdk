@@ -415,7 +415,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "${PROJECT_DIR}/scripts/fdl-gen.sh \\\n    ${PROJECT_DIR}/Tests/Fixtures/TestExample.fdl \\\n    ${PROJECT_DIR}/Tests/Fixtures/TestExample.generated.swift\n";
+			shellScript = "${PROJECT_DIR}/compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.generated.swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.fdl\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -184,25 +184,30 @@ OpenJDK 64-Bit Server VM Homebrew <span class="o">(</span>build 11.0.18+0, mixed
 
 <ol>
 <li>Navigate to your main application target&rsquo;s <code>Build Phases</code> tab.</li>
-<li>Add a new <code>Run Script Phase</code>.</li>
+<li>Add a new <code>Run Script Phase</code> <strong>before</strong> the <code>Compile Sources</code> phase.</li>
 <li>Name the script phase <code>FDL Generation</code>.</li>
 <li>Set the shell to <code>/bin/sh</code>.</li>
+<li>Create your <code>Features.fdl</code> file and place it in your project directory.</li>
+<li>Add a new file to your project called <code>Causal.generated.swift</code>.</li>
 <li>Add the following script to invoke the compiler and generate your Swift code from your FDL.
 <code>bash
-${PROJECT_DIR}/PATH/TO/CAUSAL/compiler \
-    ${PROJECT_DIR}/PATH/TO/YOUR/Features.fdl \
-    ${PROJECT_DIR}/PATH/TO/YOUR/Causal.generated.swift
-</code>
-&gt; <strong>Note</strong>
-&gt;
-&gt; Replace the paths above with the paths to your files.
-&gt;
-&gt; For CocoaPods, the path should be: <code>${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler</code>
-&gt;
-&gt; For SwiftPM: TODO
-&gt;
-&gt; Also, ensure <code>Features.generated.swift</code> has been added to your Xcode project.</li>
+${PROJECT_DIR}/PATH/TO/CausalLabsSDK/compiler/bin/compiler --swift \
+    ${PROJECT_DIR}/PATH/TO/Causal.generated.swift \
+    ${PROJECT_DIR}/PATH/TO/Features.fdl
+</code></li>
 </ol>
+
+<blockquote>
+<p><strong>Note</strong></p>
+
+<p>Replace the paths above with the paths to your files.</p>
+
+<p>For CocoaPods, the path should be: <code>${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler</code></p>
+
+<p>For SwiftPM: TODO</p>
+
+<p>Also, ensure <code>Causal.generated.swift</code> has been added to your Xcode project.</p>
+</blockquote>
 
 <p><strong>Now you can build and run!</strong> If your build succeeds, you should see your generated code in <code>Features.generated.swift</code>. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.</p>
 <h2 id='documentation' class='heading'>Documentation</h2>
