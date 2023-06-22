@@ -23,6 +23,21 @@ final class MockNetworkingClient: Networking {
     var receivedSession: (any SessionProtocol)?
     var receivedBody: Data?
 
+    var receivedBodyString: String? {
+        guard let data = self.receivedBody else {
+            return nil
+        }
+        return data.jsonString()
+    }
+
+    var receivedBodyJSON: JSONObject {
+        guard let data = self.receivedBody else {
+            return [:]
+        }
+        let jsonObject = try? JSONSerialization.jsonObject(with: data) as? JSONObject
+        return jsonObject ?? [:]
+    }
+
     @discardableResult
     func sendRequest(
         baseURL: URL,
@@ -74,7 +89,7 @@ struct MockSession: SessionProtocol {
     func updateFrom(json: JSONObject) { }
 }
 
-struct MockFeature: FeatureProtocol {
+final class MockFeature: FeatureProtocol, Equatable {
     static let name = "mock feature"
 
     var id: String { Self.name }
@@ -88,6 +103,12 @@ struct MockFeature: FeatureProtocol {
     }
 
     func updateFrom(json: JSONObject) { }
+
+    static func == (left: MockFeature, right: MockFeature) -> Bool {
+        left.id == right.id
+        && left.isActive == right.isActive
+        && left.impressionIds == right.impressionIds
+    }
 }
 
 struct MockEvent: EventProtocol {

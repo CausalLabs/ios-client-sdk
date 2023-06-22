@@ -76,7 +76,9 @@ final class RealServerTests: XCTestCase {
         var objForSignal = obj1In
         objForSignal.float1 = 12
 
-         try await testOut?.signalClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
+        try await testOut?.signalClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
 
+        // call again, make sure signal impression goes through
+        _ = try await CausalClient.shared.requestFeatures(features: featuresIn)
     }
 }

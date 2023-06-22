@@ -11,7 +11,7 @@ final class JSONProcessorTests: XCTestCase {
 
     func test_encode_requestFeatures() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
-        var ratingBox = RatingBox(
+        let ratingBox = RatingBox(
             productName: "name",
             productPrice: 10.0
         )
@@ -74,7 +74,7 @@ final class JSONProcessorTests: XCTestCase {
 
     func test_encode_SignalCachedFeatures() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
-        var ratingBox = RatingBox(productName: "product", productPrice: 10)
+        let ratingBox = RatingBox(productName: "product", productPrice: 10)
         ratingBox.impressionIds = ["old-impression-id"]
 
         let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(

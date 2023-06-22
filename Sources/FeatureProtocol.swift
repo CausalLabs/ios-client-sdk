@@ -5,7 +5,7 @@
 import Foundation
 
 /// Describes a feature generated from the Causal SDK.
-public protocol FeatureProtocol: Hashable, Codable {
+public protocol FeatureProtocol: AnyObject {
     /// The name of the feature.
     static var name: String { get }
 
@@ -22,7 +22,7 @@ public protocol FeatureProtocol: Hashable, Codable {
     func args() throws -> JSONObject
 
     /// Updates the feature using the specified JSON.
-    mutating func updateFrom(json: JSONObject) throws
+    func updateFrom(json: JSONObject) throws
 }
 
 extension FeatureProtocol {
