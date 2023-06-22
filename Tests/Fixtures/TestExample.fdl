@@ -144,7 +144,7 @@ feature CrossSell
         import ProductClick
     }    
     event EventA {
-        anInt: Int = 7
+        anInt: Int = 7777
     }
 }
 

@@ -169,29 +169,26 @@ final class CausalClientTests: XCTestCase {
             mockNetworkingClient: mockNetworkingClient
         )
 
-        let original = RatingBox(productName: "name", productPrice: 42)
-        XCTAssertEqual(original.callToAction, "Rate this product!")
-        XCTAssertEqual(original.actionButton, "Send Review")
-
-        var features: [any FeatureProtocol] = [original]
+        let feature = RatingBox(productName: "name", productPrice: 42)
+        XCTAssertEqual(feature.callToAction, "Rate this product!")
+        XCTAssertEqual(feature.actionButton, "Send Review")
 
         let isEmpty = await cache.isEmpty
         XCTAssertTrue(isEmpty)
 
-        try await client.updateFeatures(&features, impressionId: fakeImpressionId)
+        let error = await client.updateFeatures([feature], impressionId: fakeImpressionId)
+        XCTAssertNil(error)
 
-        let updated = try XCTUnwrap(features[0] as? RatingBox)
-        XCTAssertEqual(updated.productName, "name")
-        XCTAssertEqual(updated.productPrice, 42)
-        XCTAssertEqual(updated.callToAction, "Different Call To Action")
-        XCTAssertEqual(updated.actionButton, "Different Action Button")
-        XCTAssertNotEqual(updated, original, "feature should get updated")
+        XCTAssertEqual(feature.productName, "name")
+        XCTAssertEqual(feature.productPrice, 42)
+        XCTAssertEqual(feature.callToAction, "Different Call To Action")
+        XCTAssertEqual(feature.actionButton, "Different Action Button")
 
         // Verify cache saved feature
         let count = await cache.count
         XCTAssertEqual(count, 1)
 
-        let contains = await cache.contains(updated)
+        let contains = await cache.contains(feature)
         XCTAssertTrue(contains)
     }
 
@@ -384,7 +381,8 @@ final class CausalClientTests: XCTestCase {
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "network client should be called")
     }
 
-    func test_signalHasDefaultValues() async throws {
+    func test_defaultValues() async throws {
+
         let mockNetworkingClient = MockNetworkingClient()
         let cache = await FeatureCache()
         let initialSession = MockSession()
@@ -398,9 +396,34 @@ final class CausalClientTests: XCTestCase {
 
         let price = Price(currency: Currency.USD, amount: 10.0)
 
-        let crossSell1 = CrossSell(productId: "1234", price: price )
-        let crossSell2 = CrossSell(productId: "1234", price: price, withDefault: "different value")
+        var crossSell1 = CrossSell(productId: "1234", price: price )
 
-        // TODO: test what was sent
+        crossSell1 = try await client.requestFeature(feature: crossSell1)
+
+        let body1 = try XCTUnwrap(mockNetworkingClient.receivedBodyString)
+        XCTAssertTrue(body1.contains("another default"))
+
+        /*
+         
+        // TODO: I don't know how to test a specific signal with the a mock networking client
+         
+        // signal needs these set up
+         
+        CausalClient.shared.session = client.session
+        CausalClient.shared.impressionServer = client.impressionServer
+
+        try await crossSell1.signalEventA()
+        if let receivedBody = mockNetworkingClient.receivedBody {
+            let body = String(decoding: receivedBody, as: UTF8.self)
+            XCTAssertTrue(body.contains("7777"))
+        }
+        */
+
+        var crossSell2 = CrossSell(productId: "1234", price: price, withDefault: "different value")
+        crossSell2 = try await client.requestFeature(feature: crossSell2)
+
+        let body2 = try XCTUnwrap(mockNetworkingClient.receivedBodyString)
+        XCTAssertTrue(body2.contains("different value"))
+        XCTAssertFalse(body2.contains("another default"))
     }
 }

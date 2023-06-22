@@ -396,7 +396,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/sh\n${PROJECT_DIR}/scripts/gen.sh\n";
+			shellScript = "${PROJECT_DIR}/compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.generated.swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.fdl\n";
 		};
 		0BFE2BFD2A0DB5C5003C1B07 /* FDL Generation */ = {
 			isa = PBXShellScriptBuildPhase;

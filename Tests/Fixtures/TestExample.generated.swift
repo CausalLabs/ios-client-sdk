@@ -339,7 +339,7 @@ private struct _RatingBoxArgs: Codable, Hashable {
 
 /// Describes a rating box that we can put on various product pages
 /// to collect ratings from our users.
-struct RatingBox: FeatureProtocol {
+final class RatingBox: FeatureProtocol {
     static let name = "RatingBox"
 
     var isActive = true
@@ -370,7 +370,6 @@ struct RatingBox: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _RatingBoxOutputs = _RatingBoxOutputs()
 
     /// The prompts for the user to rate the product.
@@ -383,6 +382,7 @@ struct RatingBox: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(productName: String = "", productPrice: Double = 0.0, productDescription: String? = nil) {
         self._args = _RatingBoxArgs(productName: productName, productPrice: productPrice, productDescription: productDescription)
     }
@@ -391,13 +391,20 @@ struct RatingBox: FeatureProtocol {
         generateIdFrom(name: "RatingBox", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _RatingBoxOutputs.self)
+    }
+}
+
+extension RatingBox: Equatable {
+    public static func == (left: RatingBox, right: RatingBox) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -458,7 +465,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = RatingBox(productName: self.productName, productPrice: self.productPrice, productDescription: self.productDescription)
+        let _feature = RatingBox(productName: self.productName, productPrice: self.productPrice, productDescription: self.productDescription)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -495,7 +502,7 @@ private struct _ProductInfoArgs: Codable, Hashable {
 }
 
 /// An empty feature
-struct ProductInfo: FeatureProtocol {
+final class ProductInfo: FeatureProtocol {
     static let name = "ProductInfo"
 
     var isActive = true
@@ -514,11 +521,11 @@ struct ProductInfo: FeatureProtocol {
 
 
     // MARK: Outputs
-
     private var _outputs: _ProductInfoOutputs = _ProductInfoOutputs()
 
 
     // MARK: Initializer
+
     init() {
         self._args = _ProductInfoArgs()
     }
@@ -527,13 +534,20 @@ struct ProductInfo: FeatureProtocol {
         generateIdFrom(name: "ProductInfo", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductInfoOutputs.self)
+    }
+}
+
+extension ProductInfo: Equatable {
+    public static func == (left: ProductInfo, right: ProductInfo) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -559,7 +573,7 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = ProductInfo()
+        let _feature = ProductInfo()
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -589,7 +603,7 @@ private struct _ProductDisplayArgs: Codable, Hashable {
 }
 
 /// A feature with a nested object
-struct ProductDisplay: FeatureProtocol {
+final class ProductDisplay: FeatureProtocol {
     static let name = "ProductDisplay"
 
     var isActive = true
@@ -616,11 +630,11 @@ struct ProductDisplay: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _ProductDisplayOutputs = _ProductDisplayOutputs()
 
 
     // MARK: Initializer
+
     init(productName: String = "", price: Price = Price(currency: Currency.USD, amount: 0.0)) {
         self._args = _ProductDisplayArgs(productName: productName, price: price)
     }
@@ -629,13 +643,20 @@ struct ProductDisplay: FeatureProtocol {
         generateIdFrom(name: "ProductDisplay", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductDisplayOutputs.self)
+    }
+}
+
+extension ProductDisplay: Equatable {
+    public static func == (left: ProductDisplay, right: ProductDisplay) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -665,7 +686,7 @@ final class ProductDisplayViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = ProductDisplay(productName: self.productName, price: self.price)
+        let _feature = ProductDisplay(productName: self.productName, price: self.price)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -696,7 +717,9 @@ private struct _CommerceArgs: Codable, Hashable {
 }
 
 /// Feature representing a page that contains commerce buttons
-struct Commerce: FeatureProtocol {
+/// @deprecated reason
+@available(*, deprecated, message: "reason")
+final class Commerce: FeatureProtocol {
     static let name = "Commerce"
 
     var isActive = true
@@ -715,7 +738,6 @@ struct Commerce: FeatureProtocol {
 
 
     // MARK: Outputs
-
     private var _outputs: _CommerceOutputs = _CommerceOutputs()
 
     /// Material UI palette color for commerce buttons
@@ -733,6 +755,7 @@ struct Commerce: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init() {
         self._args = _CommerceArgs()
     }
@@ -741,13 +764,20 @@ struct Commerce: FeatureProtocol {
         generateIdFrom(name: "Commerce", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CommerceOutputs.self)
+    }
+}
+
+extension Commerce: Equatable {
+    public static func == (left: Commerce, right: Commerce) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -807,7 +837,7 @@ final class CommerceViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = Commerce()
+        let _feature = Commerce()
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -844,7 +874,7 @@ private struct _Feature_with_underscoresOutputs: Codable, Hashable {
 private struct _Feature_with_underscoresArgs: Codable, Hashable {
 }
 
-struct Feature_with_underscores: FeatureProtocol {
+final class Feature_with_underscores: FeatureProtocol {
     static let name = "Feature_with_underscores"
 
     var isActive = true
@@ -863,7 +893,6 @@ struct Feature_with_underscores: FeatureProtocol {
 
 
     // MARK: Outputs
-
     private var _outputs: _Feature_with_underscoresOutputs = _Feature_with_underscoresOutputs()
 
     var a_value: String {
@@ -871,6 +900,7 @@ struct Feature_with_underscores: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init() {
         self._args = _Feature_with_underscoresArgs()
     }
@@ -879,13 +909,20 @@ struct Feature_with_underscores: FeatureProtocol {
         generateIdFrom(name: "Feature_with_underscores", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _Feature_with_underscoresOutputs.self)
+    }
+}
+
+extension Feature_with_underscores: Equatable {
+    public static func == (left: Feature_with_underscores, right: Feature_with_underscores) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -911,7 +948,7 @@ final class Feature_with_underscoresViewModel: ObservableObject, FeatureViewMode
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = Feature_with_underscores()
+        let _feature = Feature_with_underscores()
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -939,7 +976,7 @@ private struct _featureThatStartsWithLowercaseOutputs: Codable, Hashable {
 private struct _featureThatStartsWithLowercaseArgs: Codable, Hashable {
 }
 
-struct featureThatStartsWithLowercase: FeatureProtocol {
+final class featureThatStartsWithLowercase: FeatureProtocol {
     static let name = "featureThatStartsWithLowercase"
 
     var isActive = true
@@ -958,7 +995,6 @@ struct featureThatStartsWithLowercase: FeatureProtocol {
 
 
     // MARK: Outputs
-
     private var _outputs: _featureThatStartsWithLowercaseOutputs = _featureThatStartsWithLowercaseOutputs()
 
     var a_value: String {
@@ -966,6 +1002,7 @@ struct featureThatStartsWithLowercase: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init() {
         self._args = _featureThatStartsWithLowercaseArgs()
     }
@@ -974,13 +1011,20 @@ struct featureThatStartsWithLowercase: FeatureProtocol {
         generateIdFrom(name: "featureThatStartsWithLowercase", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _featureThatStartsWithLowercaseOutputs.self)
+    }
+}
+
+extension featureThatStartsWithLowercase: Equatable {
+    public static func == (left: featureThatStartsWithLowercase, right: featureThatStartsWithLowercase) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1006,7 +1050,7 @@ final class featureThatStartsWithLowercaseViewModel: ObservableObject, FeatureVi
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = featureThatStartsWithLowercase()
+        let _feature = featureThatStartsWithLowercase()
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -1051,7 +1095,7 @@ private struct _CrossSellArgs: Codable, Hashable {
     var withDefault: String?
 }
 
-struct CrossSell: FeatureProtocol {
+final class CrossSell: FeatureProtocol {
     static let name = "CrossSell"
 
     var isActive = true
@@ -1080,7 +1124,6 @@ struct CrossSell: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _CrossSellOutputs = _CrossSellOutputs()
 
     var baseOnly: String {
@@ -1097,6 +1140,7 @@ struct CrossSell: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(productId: String = "", price: Price? = nil, withDefault: String? = "another default") {
         self._args = _CrossSellArgs(productId: productId, price: price, withDefault: withDefault)
     }
@@ -1105,13 +1149,20 @@ struct CrossSell: FeatureProtocol {
         generateIdFrom(name: "CrossSell", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSellOutputs.self)
+    }
+}
+
+extension CrossSell: Equatable {
+    public static func == (left: CrossSell, right: CrossSell) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1159,7 +1210,7 @@ extension CrossSell {
         }
     }
 
-    func signalEventA(anInt: Int? = 7) async throws {
+    func signalEventA(anInt: Int? = 7777) async throws {
         let event = EventA(anInt: anInt)
         try await CausalClient.shared.signalEvent(
             event: event,
@@ -1193,7 +1244,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = CrossSell(productId: self.productId, price: self.price, withDefault: self.withDefault)
+        let _feature = CrossSell(productId: self.productId, price: self.price, withDefault: self.withDefault)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -1218,7 +1269,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
             }
         }
     }
-    func signalEventA(anInt: Int? = 7, onError: ((Error) -> Void)? = nil) {
+    func signalEventA(anInt: Int? = 7777, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
                 try await self.feature?.signalEventA(anInt: anInt)
@@ -1244,7 +1295,7 @@ private struct _CrossSell2Args: Codable, Hashable {
     var price: Price?
 }
 
-struct CrossSell2: FeatureProtocol {
+final class CrossSell2: FeatureProtocol {
     static let name = "CrossSell2"
 
     var isActive = true
@@ -1270,7 +1321,6 @@ struct CrossSell2: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _CrossSell2Outputs = _CrossSell2Outputs()
 
     var baseOnly: String {
@@ -1287,6 +1337,7 @@ struct CrossSell2: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(productId: String = "", price: Price? = nil) {
         self._args = _CrossSell2Args(productId: productId, price: price)
     }
@@ -1295,13 +1346,20 @@ struct CrossSell2: FeatureProtocol {
         generateIdFrom(name: "CrossSell2", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSell2Outputs.self)
+    }
+}
+
+extension CrossSell2: Equatable {
+    public static func == (left: CrossSell2, right: CrossSell2) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1356,7 +1414,7 @@ final class CrossSell2ViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = CrossSell2(productId: self.productId, price: self.price)
+        let _feature = CrossSell2(productId: self.productId, price: self.price)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -1397,7 +1455,7 @@ private struct _CrossSellDefaultOffArgs: Codable, Hashable {
     var price: Price?
 }
 
-struct CrossSellDefaultOff: FeatureProtocol {
+final class CrossSellDefaultOff: FeatureProtocol {
     static let name = "CrossSellDefaultOff"
 
     var isActive = true
@@ -1423,7 +1481,6 @@ struct CrossSellDefaultOff: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _CrossSellDefaultOffOutputs = _CrossSellDefaultOffOutputs()
 
     var baseOnly: String {
@@ -1437,6 +1494,7 @@ struct CrossSellDefaultOff: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(productId: String = "", price: Price? = nil) {
         self._args = _CrossSellDefaultOffArgs(productId: productId, price: price)
     }
@@ -1445,13 +1503,20 @@ struct CrossSellDefaultOff: FeatureProtocol {
         generateIdFrom(name: "CrossSellDefaultOff", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSellDefaultOffOutputs.self)
+    }
+}
+
+extension CrossSellDefaultOff: Equatable {
+    public static func == (left: CrossSellDefaultOff, right: CrossSellDefaultOff) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1506,7 +1571,7 @@ final class CrossSellDefaultOffViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = CrossSellDefaultOff(productId: self.productId, price: self.price)
+        let _feature = CrossSellDefaultOff(productId: self.productId, price: self.price)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -1563,7 +1628,7 @@ private struct _TestArgs: Codable, Hashable {
     var int2: Int?
 }
 
-struct Test: FeatureProtocol {
+final class Test: FeatureProtocol {
     static let name = "Test"
 
     var isActive = true
@@ -1615,7 +1680,6 @@ struct Test: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _TestOutputs = _TestOutputs()
 
     var obj1Out: TopLevelObject {
@@ -1650,6 +1714,7 @@ struct Test: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = Color.PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil) {
         self._args = _TestArgs(obj1: obj1, obj2: obj2, obj3: obj3, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
     }
@@ -1658,13 +1723,20 @@ struct Test: FeatureProtocol {
         generateIdFrom(name: "Test", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _TestOutputs.self)
+    }
+}
+
+extension Test: Equatable {
+    public static func == (left: Test, right: Test) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1755,7 +1827,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = Test(obj1: self.obj1, obj2: self.obj2, obj3: self.obj3, float1: self.float1, float2: self.float2, enum1: self.enum1, enum2: self.enum2, string1: self.string1, string2: self.string2, int1: self.int1, int2: self.int2)
+        let _feature = Test(obj1: self.obj1, obj2: self.obj2, obj3: self.obj3, float1: self.float1, float2: self.float2, enum1: self.enum1, enum2: self.enum2, string1: self.string1, string2: self.string2, int1: self.int1, int2: self.int2)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -1808,7 +1880,7 @@ private struct _DerivedFeatureArgs: Codable, Hashable {
     var arg2: Int
 }
 
-struct DerivedFeature: FeatureProtocol {
+final class DerivedFeature: FeatureProtocol {
     static let name = "DerivedFeature"
 
     var isActive = true
@@ -1833,7 +1905,6 @@ struct DerivedFeature: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _DerivedFeatureOutputs = _DerivedFeatureOutputs()
 
     var out1: String {
@@ -1844,6 +1915,7 @@ struct DerivedFeature: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(arg1: String = "", arg2: Int = 0) {
         self._args = _DerivedFeatureArgs(arg1: arg1, arg2: arg2)
     }
@@ -1852,13 +1924,20 @@ struct DerivedFeature: FeatureProtocol {
         generateIdFrom(name: "DerivedFeature", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _DerivedFeatureOutputs.self)
+    }
+}
+
+extension DerivedFeature: Equatable {
+    public static func == (left: DerivedFeature, right: DerivedFeature) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -1888,7 +1967,7 @@ final class DerivedFeatureViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = DerivedFeature(arg1: self.arg1, arg2: self.arg2)
+        let _feature = DerivedFeature(arg1: self.arg1, arg2: self.arg2)
         _feature.impressionIds = [self.impressionId]
 
         do {

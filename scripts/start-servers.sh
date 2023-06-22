@@ -5,7 +5,7 @@ set -x
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 START_SERVERS_DIR=$PWD
 
-cd ../../../.. # we are now at root of repo
+cd ../../.. # we are now at root of repo
 
 ## if you set pipefail here, the script will die when one of the greps below doesn't find anything. Don't do it.
 set -eu

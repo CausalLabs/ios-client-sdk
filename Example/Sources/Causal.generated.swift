@@ -113,7 +113,7 @@ private struct _RatingBoxArgs: Codable, Hashable {
 
 /// Describes a rating box that we can put on various product pages
 /// to collect ratings from our users.
-struct RatingBox: FeatureProtocol {
+final class RatingBox: FeatureProtocol {
     static let name = "RatingBox"
 
     var isActive = true
@@ -136,7 +136,6 @@ struct RatingBox: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _RatingBoxOutputs = _RatingBoxOutputs()
 
     /// The prompts for the user to rate the product.
@@ -149,6 +148,7 @@ struct RatingBox: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(product: String = "") {
         self._args = _RatingBoxArgs(product: product)
     }
@@ -157,13 +157,20 @@ struct RatingBox: FeatureProtocol {
         generateIdFrom(name: "RatingBox", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _RatingBoxOutputs.self)
+    }
+}
+
+extension RatingBox: Equatable {
+    public static func == (left: RatingBox, right: RatingBox) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -219,7 +226,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = RatingBox(product: self.product)
+        let _feature = RatingBox(product: self.product)
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -256,7 +263,7 @@ private struct _ProductInfoArgs: Codable, Hashable {
 }
 
 /// An empty feature to use only as a kill switch
-struct ProductInfo: FeatureProtocol {
+final class ProductInfo: FeatureProtocol {
     static let name = "ProductInfo"
 
     var isActive = true
@@ -275,11 +282,11 @@ struct ProductInfo: FeatureProtocol {
 
 
     // MARK: Outputs
-
     private var _outputs: _ProductInfoOutputs = _ProductInfoOutputs()
 
 
     // MARK: Initializer
+
     init() {
         self._args = _ProductInfoArgs()
     }
@@ -288,13 +295,20 @@ struct ProductInfo: FeatureProtocol {
         generateIdFrom(name: "ProductInfo", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductInfoOutputs.self)
+    }
+}
+
+extension ProductInfo: Equatable {
+    public static func == (left: ProductInfo, right: ProductInfo) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -320,7 +334,7 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = ProductInfo()
+        let _feature = ProductInfo()
         _feature.impressionIds = [self.impressionId]
 
         do {
@@ -350,7 +364,7 @@ private struct _Feature2Args: Codable, Hashable {
 }
 
 /// Another feature just for demonstration purposes
-struct Feature2: FeatureProtocol {
+final class Feature2: FeatureProtocol {
     static let name = "Feature2"
 
     var isActive = true
@@ -373,7 +387,6 @@ struct Feature2: FeatureProtocol {
     }
 
     // MARK: Outputs
-
     private var _outputs: _Feature2Outputs = _Feature2Outputs()
 
     /// Example output
@@ -382,6 +395,7 @@ struct Feature2: FeatureProtocol {
     }
 
     // MARK: Initializer
+
     init(exampleArg: String = "") {
         self._args = _Feature2Args(exampleArg: exampleArg)
     }
@@ -390,13 +404,20 @@ struct Feature2: FeatureProtocol {
         generateIdFrom(name: "Feature2", args: self._args)
     }
 
-    // MARK: FeatureProtocol
     func args() throws -> JSONObject {
         try encodeObject(self._args)
     }
 
-    mutating func updateFrom(json: JSONObject) throws {
+    func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _Feature2Outputs.self)
+    }
+}
+
+extension Feature2: Equatable {
+    public static func == (left: Feature2, right: Feature2) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
     }
 }
 
@@ -452,7 +473,7 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
 
     @MainActor
     func requestFeature() async throws {
-        var _feature = Feature2(exampleArg: self.exampleArg)
+        let _feature = Feature2(exampleArg: self.exampleArg)
         _feature.impressionIds = [self.impressionId]
 
         do {

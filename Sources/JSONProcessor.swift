@@ -129,7 +129,7 @@ struct JSONProcessor {
 
                 for index in 0..<impressions.count {
                     let eachImpression = impressions[index]
-                    var eachFeature = updatedFeatures[index]
+                    let eachFeature = updatedFeatures[index]
 
                     if let impressionString = eachImpression as? String, impressionString == "OFF" {
                         eachFeature.isActive = false

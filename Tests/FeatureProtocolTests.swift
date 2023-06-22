@@ -49,7 +49,7 @@ final class FeatureProtocolTests: XCTestCase {
     }
 
     func test_args() throws {
-        var ratingBox = RatingBox(
+        let ratingBox = RatingBox(
             productName: "name",
             productPrice: 10.0,
             productDescription: "description"
@@ -81,7 +81,7 @@ final class FeatureProtocolTests: XCTestCase {
     }
 
     func test_updateFromJSON() throws {
-        var ratingBox = RatingBox(
+        let ratingBox = RatingBox(
             productName: "name",
             productPrice: 10.0,
             productDescription: "description"

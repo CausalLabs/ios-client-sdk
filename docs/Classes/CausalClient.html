@@ -502,9 +502,9 @@ This indicates that the user is still active and the session should not expire.<
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:13CausalLabsSDK0A6ClientC14updateFeatures_12impressionIdySayAA15FeatureProtocol_pGz_SStYaKF"></a>
+                    <a name="/s:13CausalLabsSDK0A6ClientC14updateFeatures_12impressionIds5Error_pSgSayAA15FeatureProtocol_pG_SStYaF"></a>
                     <a name="//apple_ref/swift/Method/updateFeatures(_:impressionId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC14updateFeatures_12impressionIdySayAA15FeatureProtocol_pGz_SStYaKF">updateFeatures(_:<wbr>impressionId:<wbr>)</a>
+                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC14updateFeatures_12impressionIds5Error_pSgSayAA15FeatureProtocol_pG_SStYaF">updateFeatures(_:<wbr>impressionId:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -515,22 +515,20 @@ This indicates that the user is still active and the session should not expire.<
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Requests a set of features to be updated from the impression server and updates them in-place.</p>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    <p>A <code><a href="../Enums/CausalError.html">CausalError</a></code>.</p>
+                        <p>An alternative to <code>requestFeatures()</code> that is non-throwing and updates features in-place.</p>
 
-</div>
+<p>Requests a set of features to be updated from the impression server and updates them in-place.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">updateFeatures</span><span class="p">(</span>
-    <span class="n">_</span> <span class="nv">features</span><span class="p">:</span> <span class="k">inout</span> <span class="p">[</span><span class="n">any</span> <span class="kt"><a href="../Protocols/FeatureProtocol.html">FeatureProtocol</a></span><span class="p">],</span>
+                          <pre class="highlight swift"><code><span class="kd">@discardableResult</span>
+<span class="kd">public</span> <span class="kd">func</span> <span class="nf">updateFeatures</span><span class="p">(</span>
+    <span class="n">_</span> <span class="nv">features</span><span class="p">:</span> <span class="p">[</span><span class="n">any</span> <span class="kt"><a href="../Protocols/FeatureProtocol.html">FeatureProtocol</a></span><span class="p">],</span>
     <span class="nv">impressionId</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:13CausalLabsSDK12ImpressionIda">ImpressionId</a></span> <span class="o">=</span> <span class="o">.</span><span class="nf">newId</span><span class="p">()</span>
-<span class="p">)</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+<span class="p">)</span> <span class="n">async</span> <span class="o">-&gt;</span> <span class="kt">Error</span><span class="p">?</span></code></pre>
 
                         </div>
                       </div>
@@ -566,6 +564,10 @@ If no id is provided, one will be generated automatically.</p>
                           </tbody>
                         </table>
                       </div>
+                      <div>
+                        <h4>Return Value</h4>
+                        <p>An error, if one occurred.</p>
+                      </div>
                     </section>
                   </div>
                 </li>
@@ -599,7 +601,7 @@ If no id is provided, one will be generated automatically.</p>
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="n">requestFeature</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt"><a href="../Protocols/FeatureProtocol.html">FeatureProtocol</a></span><span class="o">&gt;</span><span class="p">(</span>
     <span class="nv">feature</span><span class="p">:</span> <span class="kt">T</span><span class="p">,</span>
-    <span class="nv">impressionId</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:13CausalLabsSDK12ImpressionIda">ImpressionId</a></span>
+    <span class="nv">impressionId</span><span class="p">:</span> <span class="kt"><a href="../Typealiases.html#/s:13CausalLabsSDK12ImpressionIda">ImpressionId</a></span> <span class="o">=</span> <span class="o">.</span><span class="nf">newId</span><span class="p">()</span>
 <span class="p">)</span> <span class="n">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">T</span></code></pre>
 
                         </div>
@@ -648,7 +650,7 @@ If no id is provided, one will be generated automatically.</p>
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2023 <a class="link" href="https://www.causallabs.io" target="_blank" rel="external noopener">Causal Labs, Inc.</a>. All rights reserved. (Last updated: 2023-06-21)</p>
+          <p>&copy; 2023 <a class="link" href="https://www.causallabs.io" target="_blank" rel="external noopener">Causal Labs, Inc.</a>. All rights reserved. (Last updated: 2023-06-22)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>

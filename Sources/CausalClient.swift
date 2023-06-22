@@ -259,6 +259,8 @@ public final class CausalClient {
 // MARK: Convenience APIs
 
 extension CausalClient {
+    /// An alternative to `requestFeatures()` that is non-throwing and updates features in-place.
+    ///
     /// Requests a set of features to be updated from the impression server and updates them in-place.
     ///
     /// - Parameters:
@@ -266,16 +268,17 @@ extension CausalClient {
     ///   - impressionId: The impression id that matches the specific view of the requested features.
     ///     If no id is provided, one will be generated automatically.
     ///
-    /// - Throws: A ``CausalError``.
+    /// - Returns: An error, if one occurred.
+    @discardableResult
     public func updateFeatures(
-        _ features: inout [any FeatureProtocol],
+        _ features: [any FeatureProtocol],
         impressionId: ImpressionId = .newId()
-    ) async throws {
+    ) async -> Error? {
         do {
-            let updated = try await self.requestFeatures(features: features, impressionId: impressionId)
-            features = updated
+            _ = try await self.requestFeatures(features: features, impressionId: impressionId)
+            return nil
         } catch {
-            throw error
+            return error
         }
     }
 
@@ -291,7 +294,7 @@ extension CausalClient {
     /// - Throws: A ``CausalError``.
     public func requestFeature<T: FeatureProtocol>(
         feature: T,
-        impressionId: ImpressionId
+        impressionId: ImpressionId = .newId()
     ) async throws -> T {
         let result = try await self.requestFeatures(
             features: [feature],
