@@ -73,15 +73,18 @@ sudo ln -s /usr/local/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtu
 After integrating the SDK (via CocoaPods or SwiftPM) and installing Java, you'll need to add a build script phase to your Xcode project.
 
 1. Navigate to your main application target's `Build Phases` tab.
-1. Add a new `Run Script Phase`.
+1. Add a new `Run Script Phase` **before** the `Compile Sources` phase.
 1. Name the script phase `FDL Generation`.
 1. Set the shell to `/bin/sh`.
+1. Create your `Features.fdl` file and place it in your project directory.
+1. Add a new file to your project called `Causal.generated.swift`.
 1. Add the following script to invoke the compiler and generate your Swift code from your FDL.
     ```bash
-    ${PROJECT_DIR}/PATH/TO/CAUSAL/compiler \
-        ${PROJECT_DIR}/PATH/TO/YOUR/Features.fdl \
-        ${PROJECT_DIR}/PATH/TO/YOUR/Causal.generated.swift
+    ${PROJECT_DIR}/PATH/TO/CausalLabsSDK/compiler/bin/compiler --swift \
+        ${PROJECT_DIR}/PATH/TO/Causal.generated.swift \
+        ${PROJECT_DIR}/PATH/TO/Features.fdl
     ```
+
 > **Note**
 >
 > Replace the paths above with the paths to your files.
@@ -90,7 +93,7 @@ After integrating the SDK (via CocoaPods or SwiftPM) and installing Java, you'll
 >
 > For SwiftPM: TODO
 >
-> Also, ensure `Features.generated.swift` has been added to your Xcode project.
+> Also, ensure `Causal.generated.swift` has been added to your Xcode project.
 
 **Now you can build and run!** If your build succeeds, you should see your generated code in `Features.generated.swift`. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.
 
