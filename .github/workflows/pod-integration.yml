@@ -1,0 +1,32 @@
+# GitHub Actions Virtual Environments
+# https://github.com/actions/virtual-environments/
+
+name: CocoaPods Integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_14.3.1.app/Contents/Developer
+
+jobs:
+  main:
+    name: Pod Lint
+    runs-on: macos-13
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: environment check
+        run: |
+          ruby --version
+          gem --version
+          pod --version
+
+      - name: pod lint
+        run: pod lib lint --verbose

@@ -1,0 +1,50 @@
+# GitHub Actions Virtual Environments
+# https://github.com/actions/virtual-environments/
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_14.3.1.app/Contents/Developer
+  DEST: "platform=iOS Simulator,name=iPhone 14,OS=latest"
+
+jobs:
+  test:
+    name: unit tests
+    runs-on: macos-13
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+
+      - name: xcode version
+        run: xcodebuild -version -sdk
+
+      - name: list simulators
+        run: |
+          xcrun simctl delete unavailable
+          xcrun simctl list
+
+      - name: unit tests
+        run: |
+          set -o pipefail
+          xcodebuild clean test \
+              -project CausalLabsSDK.xcodeproj \
+              -scheme CausalLabsSDK \
+              -destination "$DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
+
+      - name: build example
+        run: |
+          set -o pipefail
+          xcodebuild clean build \
+              -project Example/ExampleApp.xcodeproj \
+              -scheme ExampleApp \
+              -destination "$DEST" \
+              CODE_SIGN_IDENTITY="-" | xcpretty -c
