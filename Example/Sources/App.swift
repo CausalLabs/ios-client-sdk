@@ -11,6 +11,7 @@ struct ExampleApp: App {
     init() {
         CausalClient.shared.impressionServer = URL(string: "https://tools.causallabs.io/sandbox-iserver")!
         CausalClient.shared.session = Session(deviceId: UUID().uuidString)
+        CausalClient.shared.debugLogging = .verbose
     }
 
     var body: some Scene {

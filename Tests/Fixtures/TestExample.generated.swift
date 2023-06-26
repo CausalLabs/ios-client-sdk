@@ -221,10 +221,18 @@ extension Session {
         }
     }
 
-    func signalTrackUser(timestamp: Int, impressionId: ImpressionId) async throws {
+    func signalAndWaitTrackUser(client: CausalClient = .shared, timestamp: Int, impressionId: ImpressionId) async throws {
         let event = TrackUser(timestamp: timestamp)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: impressionId
+        )
+    }
+
+    func signalTrackUser(timestamp: Int, impressionId: ImpressionId) {
+        let event = TrackUser(timestamp: timestamp)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: impressionId
         )
     }
@@ -253,10 +261,20 @@ extension Session {
     /// - Parameter productid: 
     /// - Parameter price: 
     /// - Throws: A ``CausalError``.
-    func signalAddToCart(productid: String, price: Price?, impressionId: ImpressionId) async throws {
+    func signalAndWaitAddToCart(client: CausalClient = .shared, productid: String, price: Price?, impressionId: ImpressionId) async throws {
         let event = AddToCart(productid: productid, price: price)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: impressionId
+        )
+    }
+
+    /// - Parameter productid: 
+    /// - Parameter price: 
+    func signalAddToCart(productid: String, price: Price?, impressionId: ImpressionId) {
+        let event = AddToCart(productid: productid, price: price)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: impressionId
         )
     }
@@ -288,10 +306,21 @@ extension Session {
     /// - Parameter price: 
     /// - Throws: A ``CausalError``.
     @available(*, deprecated, message: "for some reason")
-    func signalAddToCart2(productid: String, price: Price?, impressionId: ImpressionId) async throws {
+    func signalAndWaitAddToCart2(client: CausalClient = .shared, productid: String, price: Price?, impressionId: ImpressionId) async throws {
         let event = AddToCart2(productid: productid, price: price)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: impressionId
+        )
+    }
+
+    /// - Parameter productid: 
+    /// - Parameter price: 
+    @available(*, deprecated, message: "for some reason")
+    func signalAddToCart2(productid: String, price: Price?, impressionId: ImpressionId) {
+        let event = AddToCart2(productid: productid, price: price)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: impressionId
         )
     }
@@ -314,10 +343,18 @@ extension Session {
         }
     }
 
-    func signalEventZ(anInt: Int? = 11, impressionId: ImpressionId) async throws {
+    func signalAndWaitEventZ(client: CausalClient = .shared, anInt: Int? = 11, impressionId: ImpressionId) async throws {
         let event = EventZ(anInt: anInt)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: impressionId
+        )
+    }
+
+    func signalEventZ(anInt: Int? = 11, impressionId: ImpressionId) {
+        let event = EventZ(anInt: anInt)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: impressionId
         )
     }
@@ -381,11 +418,17 @@ final class RatingBox: FeatureProtocol {
         self._outputs.actionButton
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(productName: String = "", productPrice: Double = 0.0, productDescription: String? = nil) {
         self._args = _RatingBoxArgs(productName: productName, productPrice: productPrice, productDescription: productDescription)
     }
+
+    private init(args: _RatingBoxArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "RatingBox", args: self._args)
@@ -397,6 +440,14 @@ final class RatingBox: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _RatingBoxOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> RatingBox {
+        let copy = RatingBox(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -431,10 +482,19 @@ extension RatingBox {
 
     /// - Parameter stars: The rating value from the user.
     /// - Throws: A ``CausalError``.
-    func signalRating(stars: Int) async throws {
+    func signalAndWaitRating(client: CausalClient = .shared, stars: Int) async throws {
         let event = Rating(stars: stars)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    /// - Parameter stars: The rating value from the user.
+    func signalRating(stars: Int) {
+        let event = Rating(stars: stars)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -454,7 +514,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productName: String="", productPrice: Double=0.0, productDescription: String?=nil, impressionId: ImpressionId = .newId()) {
+    init(productName: String = "", productPrice: Double = 0.0, productDescription: String? = nil, impressionId: ImpressionId = .newId()) {
         self.productName = productName
         self.productPrice = productPrice
         self.productDescription = productDescription
@@ -484,7 +544,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
     func signalRating(stars: Int, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalRating(stars: stars)
+                try await self.feature?.signalAndWaitRating(stars: stars)
             } catch {
                 onError?(error)
             }
@@ -524,11 +584,17 @@ final class ProductInfo: FeatureProtocol {
     private var _outputs: _ProductInfoOutputs = _ProductInfoOutputs()
 
 
-    // MARK: Initializer
+    // MARK: Init
 
     init() {
         self._args = _ProductInfoArgs()
     }
+
+    private init(args: _ProductInfoArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "ProductInfo", args: self._args)
@@ -540,6 +606,14 @@ final class ProductInfo: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductInfoOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> ProductInfo {
+        let copy = ProductInfo(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -633,11 +707,17 @@ final class ProductDisplay: FeatureProtocol {
     private var _outputs: _ProductDisplayOutputs = _ProductDisplayOutputs()
 
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(productName: String = "", price: Price = Price(currency: Currency.USD, amount: 0.0)) {
         self._args = _ProductDisplayArgs(productName: productName, price: price)
     }
+
+    private init(args: _ProductDisplayArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "ProductDisplay", args: self._args)
@@ -649,6 +729,14 @@ final class ProductDisplay: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductDisplayOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> ProductDisplay {
+        let copy = ProductDisplay(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -676,7 +764,7 @@ final class ProductDisplayViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productName: String="", price: Price=Price(currency: Currency.USD, amount: 0.0), impressionId: ImpressionId = .newId()) {
+    init(productName: String = "", price: Price = Price(currency: Currency.USD, amount: 0.0), impressionId: ImpressionId = .newId()) {
         self.productName = productName
         self.price = price
         self.impressionId = impressionId
@@ -754,11 +842,17 @@ final class Commerce: FeatureProtocol {
         self._outputs.nullable
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init() {
         self._args = _CommerceArgs()
     }
+
+    private init(args: _CommerceArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "Commerce", args: self._args)
@@ -770,6 +864,14 @@ final class Commerce: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CommerceOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> Commerce {
+        let copy = Commerce(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -809,10 +911,21 @@ extension Commerce {
     /// - Parameter price: 
     /// - Throws: A ``CausalError``.
     @available(*, deprecated, message: "I don&#39;t know why")
-    func signalCommerceClick(productid: String, price: Price?) async throws {
+    func signalAndWaitCommerceClick(client: CausalClient = .shared, productid: String, price: Price?) async throws {
         let event = CommerceClick(productid: productid, price: price)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    /// - Parameter productid: 
+    /// - Parameter price: 
+    @available(*, deprecated, message: "I don&#39;t know why")
+    func signalCommerceClick(productid: String, price: Price?) {
+        let event = CommerceClick(productid: productid, price: price)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -856,7 +969,7 @@ final class CommerceViewModel: ObservableObject, FeatureViewModel {
     func signalCommerceClick(productid: String, price: Price?, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalCommerceClick(productid: productid, price: price)
+                try await self.feature?.signalAndWaitCommerceClick(productid: productid, price: price)
             } catch {
                 onError?(error)
             }
@@ -899,11 +1012,17 @@ final class Feature_with_underscores: FeatureProtocol {
         self._outputs.a_value
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init() {
         self._args = _Feature_with_underscoresArgs()
     }
+
+    private init(args: _Feature_with_underscoresArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "Feature_with_underscores", args: self._args)
@@ -915,6 +1034,14 @@ final class Feature_with_underscores: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _Feature_with_underscoresOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> Feature_with_underscores {
+        let copy = Feature_with_underscores(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1001,11 +1128,17 @@ final class featureThatStartsWithLowercase: FeatureProtocol {
         self._outputs.a_value
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init() {
         self._args = _featureThatStartsWithLowercaseArgs()
     }
+
+    private init(args: _featureThatStartsWithLowercaseArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "featureThatStartsWithLowercase", args: self._args)
@@ -1017,6 +1150,14 @@ final class featureThatStartsWithLowercase: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _featureThatStartsWithLowercaseOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> featureThatStartsWithLowercase {
+        let copy = featureThatStartsWithLowercase(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1139,11 +1280,17 @@ final class CrossSell: FeatureProtocol {
         self._outputs.nullable
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(productId: String = "", price: Price? = nil, withDefault: String? = "another default") {
         self._args = _CrossSellArgs(productId: productId, price: price, withDefault: withDefault)
     }
+
+    private init(args: _CrossSellArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "CrossSell", args: self._args)
@@ -1155,6 +1302,14 @@ final class CrossSell: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSellOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> CrossSell {
+        let copy = CrossSell(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1185,10 +1340,18 @@ extension CrossSell {
         }
     }
 
-    func signalCrossSellClick(productid: String) async throws {
+    func signalAndWaitCrossSellClick(client: CausalClient = .shared, productid: String) async throws {
         let event = CrossSellClick(productid: productid)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalCrossSellClick(productid: String) {
+        let event = CrossSellClick(productid: productid)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -1210,10 +1373,18 @@ extension CrossSell {
         }
     }
 
-    func signalEventA(anInt: Int? = 7777) async throws {
+    func signalAndWaitEventA(client: CausalClient = .shared, anInt: Int? = 7777) async throws {
         let event = EventA(anInt: anInt)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalEventA(anInt: Int? = 7777) {
+        let event = EventA(anInt: anInt)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -1233,7 +1404,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String="", price: Price?=nil, withDefault: String?="another default", impressionId: ImpressionId = .newId()) {
+    init(productId: String = "", price: Price? = nil, withDefault: String? = "another default", impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.withDefault = withDefault
@@ -1263,7 +1434,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
     func signalCrossSellClick(productid: String, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalCrossSellClick(productid: productid)
+                try await self.feature?.signalAndWaitCrossSellClick(productid: productid)
             } catch {
                 onError?(error)
             }
@@ -1272,7 +1443,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
     func signalEventA(anInt: Int? = 7777, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalEventA(anInt: anInt)
+                try await self.feature?.signalAndWaitEventA(anInt: anInt)
             } catch {
                 onError?(error)
             }
@@ -1336,11 +1507,17 @@ final class CrossSell2: FeatureProtocol {
         self._outputs.two
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(productId: String = "", price: Price? = nil) {
         self._args = _CrossSell2Args(productId: productId, price: price)
     }
+
+    private init(args: _CrossSell2Args) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "CrossSell2", args: self._args)
@@ -1352,6 +1529,14 @@ final class CrossSell2: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSell2Outputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> CrossSell2 {
+        let copy = CrossSell2(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1382,10 +1567,18 @@ extension CrossSell2 {
         }
     }
 
-    func signalCrossSellClick(productid: String) async throws {
+    func signalAndWaitCrossSellClick(client: CausalClient = .shared, productid: String) async throws {
         let event = CrossSellClick(productid: productid)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalCrossSellClick(productid: String) {
+        let event = CrossSellClick(productid: productid)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -1404,7 +1597,7 @@ final class CrossSell2ViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String="", price: Price?=nil, impressionId: ImpressionId = .newId()) {
+    init(productId: String = "", price: Price? = nil, impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.impressionId = impressionId
@@ -1433,7 +1626,7 @@ final class CrossSell2ViewModel: ObservableObject, FeatureViewModel {
     func signalCrossSellClick(productid: String, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalCrossSellClick(productid: productid)
+                try await self.feature?.signalAndWaitCrossSellClick(productid: productid)
             } catch {
                 onError?(error)
             }
@@ -1493,11 +1686,17 @@ final class CrossSellDefaultOff: FeatureProtocol {
         self._outputs.crosssellProductids
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(productId: String = "", price: Price? = nil) {
         self._args = _CrossSellDefaultOffArgs(productId: productId, price: price)
     }
+
+    private init(args: _CrossSellDefaultOffArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "CrossSellDefaultOff", args: self._args)
@@ -1509,6 +1708,14 @@ final class CrossSellDefaultOff: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _CrossSellDefaultOffOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> CrossSellDefaultOff {
+        let copy = CrossSellDefaultOff(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1539,10 +1746,18 @@ extension CrossSellDefaultOff {
         }
     }
 
-    func signalCrossSellClick(productid: String) async throws {
+    func signalAndWaitCrossSellClick(client: CausalClient = .shared, productid: String) async throws {
         let event = CrossSellClick(productid: productid)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalCrossSellClick(productid: String) {
+        let event = CrossSellClick(productid: productid)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -1561,7 +1776,7 @@ final class CrossSellDefaultOffViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String="", price: Price?=nil, impressionId: ImpressionId = .newId()) {
+    init(productId: String = "", price: Price? = nil, impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.impressionId = impressionId
@@ -1590,7 +1805,7 @@ final class CrossSellDefaultOffViewModel: ObservableObject, FeatureViewModel {
     func signalCrossSellClick(productid: String, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalCrossSellClick(productid: productid)
+                try await self.feature?.signalAndWaitCrossSellClick(productid: productid)
             } catch {
                 onError?(error)
             }
@@ -1713,11 +1928,17 @@ final class Test: FeatureProtocol {
         self._outputs.int2Out
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = Color.PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil) {
         self._args = _TestArgs(obj1: obj1, obj2: obj2, obj3: obj3, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
     }
+
+    private init(args: _TestArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "Test", args: self._args)
@@ -1729,6 +1950,14 @@ final class Test: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _TestOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> Test {
+        let copy = Test(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1777,10 +2006,18 @@ extension Test {
         }
     }
 
-    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) async throws {
+    func signalAndWaitClick(client: CausalClient = .shared, obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) async throws {
         let event = Click(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) {
+        let event = Click(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -1808,7 +2045,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(obj1: TopLevelObject=TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject?=nil, obj3: TopLevelObject?=TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double=0.0, float2: Double?=nil, enum1: Color=Color.PRIMARY, enum2: Color?=nil, string1: String="", string2: String?=nil, int1: Int=0, int2: Int?=nil, impressionId: ImpressionId = .newId()) {
+    init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = Color.PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil, impressionId: ImpressionId = .newId()) {
         self.obj1 = obj1
         self.obj2 = obj2
         self.obj3 = obj3
@@ -1846,7 +2083,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
     func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalClick(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
+                try await self.feature?.signalAndWaitClick(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
             } catch {
                 onError?(error)
             }
@@ -1914,11 +2151,17 @@ final class DerivedFeature: FeatureProtocol {
         self._outputs.out2
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(arg1: String = "", arg2: Int = 0) {
         self._args = _DerivedFeatureArgs(arg1: arg1, arg2: arg2)
     }
+
+    private init(args: _DerivedFeatureArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "DerivedFeature", args: self._args)
@@ -1930,6 +2173,14 @@ final class DerivedFeature: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _DerivedFeatureOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> DerivedFeature {
+        let copy = DerivedFeature(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -1957,7 +2208,7 @@ final class DerivedFeatureViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(arg1: String="", arg2: Int=0, impressionId: ImpressionId = .newId()) {
+    init(arg1: String = "", arg2: Int = 0, impressionId: ImpressionId = .newId()) {
         self.arg1 = arg1
         self.arg2 = arg2
         self.impressionId = impressionId

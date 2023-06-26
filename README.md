@@ -16,16 +16,6 @@ The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with nati
 pod 'CausalLabsSDK', '~> 0.1.0'
 ````
 
-### [Swift Package Manager](https://swift.org/package-manager/)
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/CausalLabs/ios-client-sdk.git", from: "0.1.0")
-]
-```
-
-Alternatively, you can add the package [directly via Xcode](https://developer.apple.com/documentation/xcode/adding_package_dependencies_to_your_app).
-
 ## Causal Compiler Configuration
 
 1. Install Java 11 (via homebrew)
@@ -70,7 +60,7 @@ sudo ln -s /usr/local/opt/openjdk@11/libexec/openjdk.jdk /Library/Java/JavaVirtu
 
 ## Xcode Project Configuration
 
-After integrating the SDK (via CocoaPods or SwiftPM) and installing Java, you'll need to add a build script phase to your Xcode project.
+After integrating the SDK via CocoaPods and installing Java, you'll need to add a build script phase to your Xcode project.
 
 1. Navigate to your main application target's `Build Phases` tab.
 1. Add a new `Run Script Phase` **before** the `Compile Sources` phase.
@@ -79,23 +69,18 @@ After integrating the SDK (via CocoaPods or SwiftPM) and installing Java, you'll
 1. Create your `Features.fdl` file and place it in your project directory.
 1. Add a new file to your project called `Causal.generated.swift`.
 1. Add the following script to invoke the compiler and generate your Swift code from your FDL.
-    ```bash
-    ${PROJECT_DIR}/PATH/TO/CausalLabsSDK/compiler/bin/compiler --swift \
-        ${PROJECT_DIR}/PATH/TO/Causal.generated.swift \
-        ${PROJECT_DIR}/PATH/TO/Features.fdl
-    ```
 
-> **Note**
->
-> Replace the paths above with the paths to your files.
->
-> For CocoaPods, the path should be: `${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler`
->
-> For SwiftPM: TODO
->
-> Also, ensure `Causal.generated.swift` has been added to your Xcode project.
+```bash
+${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler --swift \
+    ${PROJECT_DIR}/PATH/TO/Causal.generated.swift \
+    ${PROJECT_DIR}/PATH/TO/Features.fdl
+```
 
-**Now you can build and run!** If your build succeeds, you should see your generated code in `Features.generated.swift`. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.
+**Now you can build and run!** If your build succeeds, you should see your generated code in `Causal.generated.swift`. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.
+
+## Example
+
+You can find our [example app here](https://github.com/CausalLabs/ios-client-sdk/tree/main/Example).
 
 ## Documentation
 

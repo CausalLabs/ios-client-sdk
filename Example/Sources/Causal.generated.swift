@@ -111,8 +111,8 @@ private struct _RatingBoxArgs: Codable, Hashable {
     var product: String
 }
 
-/// Describes a rating box that we can put on various product pages
-/// to collect ratings from our users.
+/// Wraps a rating box that we can put on various product pages
+/// to collect ratings from our users
 final class RatingBox: FeatureProtocol {
     static let name = "RatingBox"
 
@@ -130,7 +130,7 @@ final class RatingBox: FeatureProtocol {
     // MARK: Arguments
     private var _args: _RatingBoxArgs
 
-    /// The product for which we are collecting ratings.
+    /// The product that we are collecting ratings for
     var product: String {
         self._args.product
     }
@@ -138,7 +138,7 @@ final class RatingBox: FeatureProtocol {
     // MARK: Outputs
     private var _outputs: _RatingBoxOutputs = _RatingBoxOutputs()
 
-    /// The prompts for the user to rate the product.
+    /// The text next to the stars that prompts the visitor to rate the product
     var callToAction: String {
         self._outputs.callToAction
     }
@@ -147,11 +147,17 @@ final class RatingBox: FeatureProtocol {
         self._outputs.actionButton
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(product: String = "") {
         self._args = _RatingBoxArgs(product: product)
     }
+
+    private init(args: _RatingBoxArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "RatingBox", args: self._args)
@@ -163,6 +169,14 @@ final class RatingBox: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _RatingBoxOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> RatingBox {
+        let copy = RatingBox(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -178,7 +192,7 @@ extension RatingBox: Equatable {
 
 // MARK: - Rating
 extension RatingBox {
-    /// Occurs each time a rating is collected.
+    /// Occurs each time a rating is collected
     struct Rating: EventProtocol {
         /// The name of the feature for which this event is associated.
         public static let featureName = "RatingBox"
@@ -196,10 +210,19 @@ extension RatingBox {
 
     /// - Parameter stars: 
     /// - Throws: A ``CausalError``.
-    func signalRating(stars: Int) async throws {
+    func signalAndWaitRating(client: CausalClient = .shared, stars: Int) async throws {
         let event = Rating(stars: stars)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    /// - Parameter stars: 
+    func signalRating(stars: Int) {
+        let event = Rating(stars: stars)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -217,7 +240,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(product: String="", impressionId: ImpressionId = .newId()) {
+    init(product: String = "", impressionId: ImpressionId = .newId()) {
         self.product = product
         self.impressionId = impressionId
     }
@@ -245,7 +268,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
     func signalRating(stars: Int, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalRating(stars: stars)
+                try await self.feature?.signalAndWaitRating(stars: stars)
             } catch {
                 onError?(error)
             }
@@ -285,11 +308,17 @@ final class ProductInfo: FeatureProtocol {
     private var _outputs: _ProductInfoOutputs = _ProductInfoOutputs()
 
 
-    // MARK: Initializer
+    // MARK: Init
 
     init() {
         self._args = _ProductInfoArgs()
     }
+
+    private init(args: _ProductInfoArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "ProductInfo", args: self._args)
@@ -301,6 +330,14 @@ final class ProductInfo: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _ProductInfoOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> ProductInfo {
+        let copy = ProductInfo(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -394,11 +431,17 @@ final class Feature2: FeatureProtocol {
         self._outputs.exampleOutput
     }
 
-    // MARK: Initializer
+    // MARK: Init
 
     init(exampleArg: String = "") {
         self._args = _Feature2Args(exampleArg: exampleArg)
     }
+
+    private init(args: _Feature2Args) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
 
     var id: FeatureId {
         generateIdFrom(name: "Feature2", args: self._args)
@@ -410,6 +453,14 @@ final class Feature2: FeatureProtocol {
 
     func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _Feature2Outputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> Feature2 {
+        let copy = Feature2(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
     }
 }
 
@@ -443,10 +494,19 @@ extension Feature2 {
 
     /// - Parameter data: 
     /// - Throws: A ``CausalError``.
-    func signalExampleEvent(data: String) async throws {
+    func signalAndWaitExampleEvent(client: CausalClient = .shared, data: String) async throws {
         let event = ExampleEvent(data: data)
-        try await CausalClient.shared.signalEvent(
+        try await client.signalAndWait(
             event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    /// - Parameter data: 
+    func signalExampleEvent(data: String) {
+        let event = ExampleEvent(data: data)
+        CausalClient.shared.signalEvent(
+            event,
             impressionId: self.impressionIds.first ?? ""
         )
     }
@@ -464,7 +524,7 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(exampleArg: String="", impressionId: ImpressionId = .newId()) {
+    init(exampleArg: String = "", impressionId: ImpressionId = .newId()) {
         self.exampleArg = exampleArg
         self.impressionId = impressionId
     }
@@ -492,7 +552,7 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
     func signalExampleEvent(data: String, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
-                try await self.feature?.signalExampleEvent(data: data)
+                try await self.feature?.signalAndWaitExampleEvent(data: data)
             } catch {
                 onError?(error)
             }

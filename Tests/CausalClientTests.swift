@@ -66,7 +66,7 @@ final class CausalClientTests: XCTestCase {
             mockNetworkingClient: mockNetworkingClient
         )
 
-        try await client.signalEvent(
+        try await client.signalAndWait(
             event: MockEvent(),
             impressionId: fakeImpressionId
         )
@@ -85,7 +85,7 @@ final class CausalClientTests: XCTestCase {
         )
 
         do {
-            try await client.signalEvent(
+            try await client.signalAndWait(
                 event: MockEvent(),
                 impressionId: fakeImpressionId
             )
@@ -240,10 +240,15 @@ final class CausalClientTests: XCTestCase {
             sessionTimer: timer
         )
 
-        let features: [any FeatureProtocol] = [
-            MockFeature(),
-            RatingBox(productName: "name", productPrice: 10)
-        ]
+        let initialImpressionId = String.newId()
+
+        let feature1 = MockFeature()
+        feature1.impressionIds = [initialImpressionId]
+
+        let feature2 = RatingBox(productName: "name", productPrice: 10)
+        feature2.impressionIds = [initialImpressionId]
+
+        let features: [any FeatureProtocol] = [feature1, feature2]
 
         // request cache fill
         try await client.requestCacheFill(features: features)
@@ -262,8 +267,23 @@ final class CausalClientTests: XCTestCase {
             impressionId: fakeImpressionId
         )
 
-        XCTAssertEqual(requestedFeatures[0] as? MockFeature, features[0] as? MockFeature)
-        XCTAssertEqual(requestedFeatures[1] as? RatingBox, features[1] as? RatingBox)
+        let requested1 = try XCTUnwrap(requestedFeatures[0] as? MockFeature)
+        XCTAssertNotEqual(feature1, requested1, "features should not be equal because impression ids should be updated")
+
+        XCTAssertEqual(requested1.impressionIds, [fakeImpressionId])
+        XCTAssertEqual(feature1.impressionIds, [initialImpressionId])
+
+        XCTAssertEqual(try requested1.args(), try feature1.args(), "args should be equal")
+        XCTAssertNotEqual(requested1.impressionIds, feature1.impressionIds, "impression ids should be updated")
+
+        let requested2 = try XCTUnwrap(requestedFeatures[1] as? RatingBox)
+        XCTAssertNotEqual(feature2, requested2, "features should not be equal because impression ids should be updated")
+
+        XCTAssertEqual(requested2.impressionIds, [fakeImpressionId])
+        XCTAssertEqual(feature2.impressionIds, [initialImpressionId])
+
+        XCTAssertEqual(try requested2.args(), try feature2.args(), "args should be equal")
+        XCTAssertNotEqual(requested2.impressionIds, feature2.impressionIds, "impression ids should be updated")
 
         // Verify NetworkClient was NOT called
         XCTAssertFalse(mockNetworkingClient.sendRequestWasCalled, "should get features from cache, not network")
@@ -403,21 +423,11 @@ final class CausalClientTests: XCTestCase {
         let body1 = try XCTUnwrap(mockNetworkingClient.receivedBodyString)
         XCTAssertTrue(body1.contains("another default"))
 
-        /*
-         
-        // TODO: I don't know how to test a specific signal with the a mock networking client
-         
-        // signal needs these set up
-         
-        CausalClient.shared.session = client.session
-        CausalClient.shared.impressionServer = client.impressionServer
+        try await crossSell1.signalAndWaitEventA(client: client)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyString?.contains("7777"), true)
 
-        try await crossSell1.signalEventA()
-        if let receivedBody = mockNetworkingClient.receivedBody {
-            let body = String(decoding: receivedBody, as: UTF8.self)
-            XCTAssertTrue(body.contains("7777"))
-        }
-        */
+        try await crossSell1.signalAndWaitEventA(client: client, anInt: 8_888)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyString?.contains("8888"), true)
 
         var crossSell2 = CrossSell(productId: "1234", price: price, withDefault: "different value")
         crossSell2 = try await client.requestFeature(feature: crossSell2)

@@ -4,6 +4,18 @@
 
 import Foundation
 
+/// Describes the verbosity of debug logging.
+public enum DebugLogVerbosity {
+    /// Disables all logging.
+    case off
+
+    /// Enable logging for errors only.
+    case errors
+
+    /// Enables all logging. Logs include info messages, warnings, and errors.
+    case verbose
+}
+
 private enum LogLevel: String {
     case info
     case warning
@@ -13,17 +25,7 @@ private enum LogLevel: String {
 final class Logger {
     static let shared = Logger()
 
-    var enabled = false
-
-    var includeFileLocation = false
-
-    private init() {
-    #if DEBUG
-        self.enabled = true
-    #else
-        self.enabled = false
-    #endif
-    }
+    var verbosity = DebugLogVerbosity.errors
 
     func info(_ message: String,
               file: StaticString = #file,
@@ -32,11 +34,12 @@ final class Logger {
         self._log(level: .info, message: message, file: file, function: function, line: line)
     }
 
-    func info(jsonData: Data,
+    func info(_ message: String,
+              jsonData: Data,
               file: StaticString = #file,
               function: StaticString = #function,
               line: Int = #line) {
-        self.info("JSON Data:\n\(jsonData.jsonString())\n", file: file, function: function, line: line)
+        self.info("\(message)\nJSON Data:\n\(jsonData.jsonString())", file: file, function: function, line: line)
     }
 
     func warning(_ message: String,
@@ -46,17 +49,30 @@ final class Logger {
         self._log(level: .warning, message: message, file: file, function: function, line: line)
     }
 
-    func error(_ error: Error,
-               message: String? = nil,
+    func error(_ message: String,
+               error: Error,
                file: StaticString = #file,
                function: StaticString = #function,
                line: Int = #line) {
         let messageWithError = """
-            \(message ?? "none")
+            \(message)
             Error: \(error.localizedDescription)
             \(error)
             """
         self._log(level: .error, message: messageWithError, file: file, function: function, line: line)
+    }
+
+    private func _allowLogs(level: LogLevel) -> Bool {
+        switch self.verbosity {
+        case .off:
+            return false
+
+        case .errors:
+            return level == .error
+
+        case .verbose:
+            return true
+        }
     }
 
     private func _log(level: LogLevel,
@@ -64,21 +80,19 @@ final class Logger {
                       file: StaticString,
                       function: StaticString,
                       line: Int) {
-        guard self.enabled else { return }
+        guard self._allowLogs(level: level) else { return }
 
         var log = "[CausalLabsSDK] \(level.rawValue.uppercased())"
+        log.append("""
 
-        if self.includeFileLocation {
-            log.append("""
-
-            File: \(file)
-            Location: \(function) - Line: \(line)
-            """)
-        }
+        File: \(file)
+        Location: \(function) - Line: \(line)
+        """)
 
         print("""
         \(log)
         Message: \(message)
+
         """)
     }
 }

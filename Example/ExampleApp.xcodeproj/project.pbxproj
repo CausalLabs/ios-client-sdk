@@ -242,7 +242,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "${PROJECT_DIR}/../compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Sources/Causal.generated.swift \\\n        ${PROJECT_DIR}/Features.fdl\n";
+			shellScript = "if [ -e ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ]; then\n  cp ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ${PROJECT_DIR}/features.fdl\nfi\n\n${PROJECT_DIR}/../compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Sources/Causal.generated.swift \\\n        ${PROJECT_DIR}/Features.fdl\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -23,6 +23,9 @@ public protocol FeatureProtocol: AnyObject {
 
     /// Updates the feature using the specified JSON.
     func updateFrom(json: JSONObject) throws
+
+    /// Returns a copy of this feature with `newImpressionId`.
+    func copy(newImpressionId: ImpressionId) -> Self
 }
 
 extension FeatureProtocol {
