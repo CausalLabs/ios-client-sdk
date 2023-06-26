@@ -16,7 +16,7 @@ env:
 
 jobs:
   main:
-    name: Pod Lint
+    name: pod lint
     runs-on: macos-13
     steps:
       - name: git checkout
