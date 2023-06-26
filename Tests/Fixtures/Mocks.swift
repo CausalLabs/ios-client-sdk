@@ -10,6 +10,8 @@ let fakeJSON = "{ \"status\" : \"ok\" }"
 private let defaultResponse = String(fakeJSON)
 
 final class MockNetworkingClient: Networking {
+    var configuration = URLSessionConfiguration.default
+
     var stubbedResponse = defaultResponse
     var stubbedError: CausalError?
 
@@ -98,11 +100,18 @@ final class MockFeature: FeatureProtocol, Equatable {
 
     var impressionIds = [ImpressionId]()
 
-    func args() -> JSONObject {
+    func args() throws -> JSONObject {
         JSONObject()
     }
 
     func updateFrom(json: JSONObject) { }
+
+    func copy(newImpressionId: ImpressionId) -> MockFeature {
+        let copy = MockFeature()
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
+    }
 
     static func == (left: MockFeature, right: MockFeature) -> Bool {
         left.id == right.id

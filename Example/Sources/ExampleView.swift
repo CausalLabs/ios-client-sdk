@@ -37,6 +37,16 @@ struct ExampleView: View {
             .buttonStyle(.bordered)
             .padding()
         }
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem {
+                Button("Clear Cache") {
+                    Task {
+                        await CausalClient.shared.clearCache()
+                    }
+                }
+            }
+        }
         .padding()
         .requestFeature(self.viewModel)
     }

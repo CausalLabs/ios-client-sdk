@@ -12,6 +12,28 @@ public final class CausalClient {
     /// - Warning: You must set ``impressionServer`` and ``session`` before using.
     public static let shared = CausalClient()
 
+    /// Enables or disables logs for debugging.
+    ///
+    /// - Seealso: ``DebugLogVerbosity``
+    public var debugLogging: DebugLogVerbosity {
+        get {
+            self.logger.verbosity
+        }
+        set {
+            self.logger.verbosity = newValue
+        }
+    }
+
+    /// A configuration object that defines behavior and policies for a URL session.
+    public var configuration: URLSessionConfiguration {
+        get {
+            self.networkClient.configuration
+        }
+        set {
+            self.networkClient.configuration = newValue
+        }
+    }
+
     /// The URL for the impression server.
     @RequiredOnce(description: "impression server URL", resettable: true)
     public var impressionServer: URL
@@ -53,11 +75,17 @@ public final class CausalClient {
     ///
     /// - Returns: The updated features from the server.
     ///
-    /// - Throws: A ``CausalError``.
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func requestFeatures(
         features: [any FeatureProtocol],
         impressionId: ImpressionId = .newId()
     ) async throws -> [any FeatureProtocol] {
+        self.logger.info("""
+        Requesting features...
+        Features: \(features)
+        Impression Id: \(impressionId)
+        """)
+
         await self._validateAndExtendSession()
 
         if await !self.featureCache.isEmpty {
@@ -68,12 +96,14 @@ public final class CausalClient {
 
                 _ = Task {
                     try await self._signalCachedFeatures(
-                        features: cachedFeatures,
+                        cachedFeatures,
                         impressionId: impressionId
                     )
                 }
 
-                return cachedFeatures
+                self.logger.info("Returning cached features with impression id: \(impressionId)")
+
+                return cachedFeatures.map { $0.copy(newImpressionId: impressionId) }
             }
         }
 
@@ -101,6 +131,8 @@ public final class CausalClient {
 
             await self.featureCache.save(all: updatedFeatures)
 
+            self.logger.info("Saving updated features: \(updatedFeatures)")
+
             return updatedFeatures
         }
 
@@ -112,11 +144,16 @@ public final class CausalClient {
     /// - Parameters:
     ///   - features: The features to request.
     ///
-    /// - Throws: A ``CausalError``.
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func requestCacheFill(features: [any FeatureProtocol]) async throws {
         await self._validateAndExtendSession()
 
         let featuresNotCached = await self.featureCache.filter(notIncluded: features)
+
+        self.logger.info("""
+        Requesting cache fill...
+        Features: \(featuresNotCached)
+        """)
 
         let task = Task {
             let jsonData = try self.jsonProcessor.encodeRequestFeatures(
@@ -152,11 +189,17 @@ public final class CausalClient {
     ///   - event: The event that occurred.
     ///   - impressionId: The impression id that matches the specific view of the feature.
     ///
-    /// - Throws: A ``CausalError``.
-    public func signalEvent(
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
+    public func signalAndWait(
         event: any EventProtocol,
         impressionId: ImpressionId
     ) async throws {
+        self.logger.info("""
+        Signaling event...
+        Event: \(event.name)
+        Impression id: \(impressionId)
+        """)
+
         await self._validateAndExtendSession()
 
         let task = Task {
@@ -179,9 +222,14 @@ public final class CausalClient {
 
     /// Signals a feature impression when reading features from the cache.
     private func _signalCachedFeatures(
-        features: [any FeatureProtocol],
+        _ features: [any FeatureProtocol],
         impressionId: ImpressionId
     ) async throws {
+        self.logger.info("""
+        Signaling cached features...
+        Features: \(features.map { $0.name })
+        Impression id: \(impressionId)
+        """)
         let task = Task {
             let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(
                 features: features,
@@ -203,8 +251,9 @@ public final class CausalClient {
     /// Instructs the server to keep the session alive.
     /// This indicates that the user is still active and the session should not expire.
     ///
-    /// - Throws: A ``CausalError``.
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func keepAlive() async throws {
+        self.logger.info("Requesting session keep alive. Session id: \(self.session.id)")
         await self._validateAndExtendSession()
 
         let task = Task {
@@ -225,10 +274,13 @@ public final class CausalClient {
     ///
     /// - Warning: This should rarely be used and is primarily intended for debugging.
     public func clearCache() async {
+        self.logger.info("Emptying the feature cache")
         await self.featureCache.removeAll()
     }
 
     private func _updateSession(new updatedSession: any SessionProtocol) async {
+        self.logger.info("Saving updated session: \(updatedSession)")
+
         /// save old `session.id` for validation
         self.previousSessionId = self.session.id
 
@@ -244,11 +296,13 @@ public final class CausalClient {
     private func _validateAndExtendSession() async {
         /// if `session` has changed, invalidate
         if self.session.id != self.previousSessionId {
+            self.logger.info("New session has started. SessionId: \(self.session.id)")
             self.sessionTimer.invalidate()
         }
 
         if self.sessionTimer.isExpired {
-            await self.featureCache.removeAll()
+            self.logger.info("Session has expired. SessionId: \(self.session.id)")
+            await self.clearCache()
             self.sessionTimer.start()
         } else {
             self.sessionTimer.keepAlive()
@@ -268,7 +322,7 @@ extension CausalClient {
     ///   - impressionId: The impression id that matches the specific view of the requested features.
     ///     If no id is provided, one will be generated automatically.
     ///
-    /// - Returns: An error, if one occurred.
+    /// - Returns: A ``CausalError`` or an iOS SDK `Error`, if one occurred.
     @discardableResult
     public func updateFeatures(
         _ features: [any FeatureProtocol],
@@ -278,6 +332,7 @@ extension CausalClient {
             _ = try await self.requestFeatures(features: features, impressionId: impressionId)
             return nil
         } catch {
+            self.logger.error("Update features error", error: error)
             return error
         }
     }
@@ -289,9 +344,9 @@ extension CausalClient {
     ///   - impressionId: The impression id that matches the specific view of the requested feature.
     ///                   If no id is provided, one will be generated automatically.
     ///
-    /// - Returns: The updated feature from the server, or the default if there was an error.
+    /// - Returns: The updated feature from the server, or the default feature if there was an error.
     ///
-    /// - Throws: A ``CausalError``.
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func requestFeature<T: FeatureProtocol>(
         feature: T,
         impressionId: ImpressionId = .newId()
@@ -301,5 +356,22 @@ extension CausalClient {
             impressionId: impressionId
         )
         return (result.first as? T) ?? feature
+    }
+
+    /// An alternative to `signalAndWait()` that is "fire-and-forget" and ignores errors.
+    ///
+    /// Signals that the specified event occurred for an impression.
+    ///
+    /// - Parameters:
+    ///   - event: The event that occurred.
+    ///   - impressionId: The impression id that matches the specific view of the feature.
+    public func signalEvent(_ event: any EventProtocol, impressionId: ImpressionId) {
+        Task {
+            do {
+                try await self.signalAndWait(event: event, impressionId: impressionId)
+            } catch {
+                self.logger.error("Signal and wait error", error: error)
+            }
+        }
     }
 }

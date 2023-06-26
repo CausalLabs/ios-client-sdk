@@ -112,4 +112,17 @@ final class FeatureProtocolTests: XCTestCase {
         XCTAssertEqual(ratingBox.callToAction, "New Call")
         XCTAssertEqual(ratingBox.actionButton, "New Button")
     }
+
+    func test_copy_withNewImpressionId() throws {
+        let original = RatingBox(productName: "name", productPrice: 10, productDescription: "description")
+        original.impressionIds = ["aaa-bbb-ccc"]
+
+        let copy = original.copy(newImpressionId: "xxx-yyy-zzz")
+        XCTAssertNotEqual(copy, original)
+
+        XCTAssertEqual(original.impressionIds, ["aaa-bbb-ccc"])
+        XCTAssertEqual(copy.impressionIds, ["xxx-yyy-zzz"])
+
+        XCTAssertEqual(try copy.args(), try original.args())
+    }
 }

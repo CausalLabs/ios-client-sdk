@@ -50,6 +50,7 @@ public enum CausalError: Error, CustomStringConvertible {
         return description
     }
 
+    /// :nodoc:
     public var description: String {
         self.localizedDescription
     }
