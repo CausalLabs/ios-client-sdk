@@ -792,6 +792,270 @@ final class ProductDisplayViewModel: ObservableObject, FeatureViewModel {
 
 }
 
+// MARK: - EmptyFeature
+
+private struct _EmptyFeatureOutputs: Codable, Hashable {
+    var impressionIds: [ImpressionId] = []
+}
+
+private struct _EmptyFeatureArgs: Codable, Hashable {
+}
+
+final class EmptyFeature: FeatureProtocol {
+    static let name = "EmptyFeature"
+
+    var isActive = true
+
+    var impressionIds: [ImpressionId] {
+        get {
+            self._outputs.impressionIds
+        }
+        set {
+            self._outputs.impressionIds = newValue
+        }
+    }
+
+    // MARK: Arguments
+    private var _args: _EmptyFeatureArgs
+
+
+    // MARK: Outputs
+    private var _outputs: _EmptyFeatureOutputs = _EmptyFeatureOutputs()
+
+
+    // MARK: Init
+
+    init() {
+        self._args = _EmptyFeatureArgs()
+    }
+
+    private init(args: _EmptyFeatureArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
+
+    var id: FeatureId {
+        generateIdFrom(name: "EmptyFeature", args: self._args)
+    }
+
+    func args() throws -> JSONObject {
+        try encodeObject(self._args)
+    }
+
+    func updateFrom(json: JSONObject) throws {
+        self._outputs = try decodeObject(from: json, to: _EmptyFeatureOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> EmptyFeature {
+        let copy = EmptyFeature(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
+    }
+}
+
+extension EmptyFeature: Equatable {
+    public static func == (left: EmptyFeature, right: EmptyFeature) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
+    }
+}
+
+// MARK: EmptyFeature Events
+
+
+// MARK: - EmptyFeature View Model
+
+final class EmptyFeatureViewModel: ObservableObject, FeatureViewModel {
+    @Published var feature: EmptyFeature?
+
+    // MARK: Arguments
+
+    let impressionId: ImpressionId
+
+    // MARK: Init
+
+    init(impressionId: ImpressionId = .newId()) {
+        self.impressionId = impressionId
+    }
+
+    // MARK: Feature request
+
+    @MainActor
+    func requestFeature() async throws {
+        let _feature = EmptyFeature()
+        _feature.impressionIds = [self.impressionId]
+
+        do {
+            self.feature = try await CausalClient.shared.requestFeature(
+                feature: _feature,
+                impressionId: self.impressionId
+            )
+        } catch {
+            self.feature = _feature
+            throw error
+        }
+    }
+
+    // MARK: Events
+
+}
+
+// MARK: - StrangeFeature
+
+private struct _StrangeFeatureOutputs: Codable, Hashable {
+    var impressionIds: [ImpressionId] = []
+}
+
+private struct _StrangeFeatureArgs: Codable, Hashable {
+}
+
+final class StrangeFeature: FeatureProtocol {
+    static let name = "StrangeFeature"
+
+    var isActive = true
+
+    var impressionIds: [ImpressionId] {
+        get {
+            self._outputs.impressionIds
+        }
+        set {
+            self._outputs.impressionIds = newValue
+        }
+    }
+
+    // MARK: Arguments
+    private var _args: _StrangeFeatureArgs
+
+
+    // MARK: Outputs
+    private var _outputs: _StrangeFeatureOutputs = _StrangeFeatureOutputs()
+
+
+    // MARK: Init
+
+    init() {
+        self._args = _StrangeFeatureArgs()
+    }
+
+    private init(args: _StrangeFeatureArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
+
+    var id: FeatureId {
+        generateIdFrom(name: "StrangeFeature", args: self._args)
+    }
+
+    func args() throws -> JSONObject {
+        try encodeObject(self._args)
+    }
+
+    func updateFrom(json: JSONObject) throws {
+        self._outputs = try decodeObject(from: json, to: _StrangeFeatureOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> StrangeFeature {
+        let copy = StrangeFeature(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
+    }
+}
+
+extension StrangeFeature: Equatable {
+    public static func == (left: StrangeFeature, right: StrangeFeature) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
+    }
+}
+
+// MARK: StrangeFeature Events
+
+// MARK: - NoParamEvent
+extension StrangeFeature {
+    struct NoParamEvent: EventProtocol {
+        /// The name of the feature for which this event is associated.
+        public static let featureName = "StrangeFeature"
+
+        /// The name of this event.
+        public static let name = "NoParamEvent"
+
+        func serialized() throws -> JSONObject {
+            let json = try encodeObject(self)
+            return json
+        }
+    }
+
+    func signalAndWaitNoParamEvent(client: CausalClient = .shared) async throws {
+        let event = NoParamEvent()
+        try await client.signalAndWait(
+            event: event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+
+    func signalNoParamEvent() {
+        let event = NoParamEvent()
+        CausalClient.shared.signalEvent(
+            event,
+            impressionId: self.impressionIds.first ?? ""
+        )
+    }
+}
+
+// MARK: - StrangeFeature View Model
+
+final class StrangeFeatureViewModel: ObservableObject, FeatureViewModel {
+    @Published var feature: StrangeFeature?
+
+    // MARK: Arguments
+
+    let impressionId: ImpressionId
+
+    // MARK: Init
+
+    init(impressionId: ImpressionId = .newId()) {
+        self.impressionId = impressionId
+    }
+
+    // MARK: Feature request
+
+    @MainActor
+    func requestFeature() async throws {
+        let _feature = StrangeFeature()
+        _feature.impressionIds = [self.impressionId]
+
+        do {
+            self.feature = try await CausalClient.shared.requestFeature(
+                feature: _feature,
+                impressionId: self.impressionId
+            )
+        } catch {
+            self.feature = _feature
+            throw error
+        }
+    }
+
+    // MARK: Events
+
+    func signalNoParamEvent(onError: ((Error) -> Void)? = nil) {
+        Task {
+            do {
+                try await self.feature?.signalAndWaitNoParamEvent()
+            } catch {
+                onError?(error)
+            }
+        }
+    }
+}
+
 // MARK: - Commerce
 
 private struct _CommerceOutputs: Codable, Hashable {

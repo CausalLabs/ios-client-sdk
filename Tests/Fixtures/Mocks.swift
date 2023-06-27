@@ -25,11 +25,8 @@ final class MockNetworkingClient: Networking {
     var receivedSession: (any SessionProtocol)?
     var receivedBody: Data?
 
-    var receivedBodyString: String? {
-        guard let data = self.receivedBody else {
-            return nil
-        }
-        return data.jsonString()
+    var receivedBodyString: String {
+        self.receivedBody?.jsonString() ?? ""
     }
 
     var receivedBodyJSON: JSONObject {
@@ -47,6 +44,8 @@ final class MockNetworkingClient: Networking {
         session: any SessionProtocol,
         body: Data
     ) async throws -> Data {
+        Logger.shared.info("MOCK: sending request to \(endpoint)...")
+
         self.sendRequestCallCount += 1
 
         self.receivedBaseURL = baseURL
@@ -62,9 +61,9 @@ final class MockNetworkingClient: Networking {
     }
 
     func reset() {
+        self.configuration = .default
         self.stubbedResponse = defaultResponse
         self.stubbedError = nil
-
         self.sendRequestCallCount = 0
         self.receivedBaseURL = nil
         self.receivedEndpoint = nil

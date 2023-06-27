@@ -26,6 +26,9 @@
 		0B91EEFD2A2E90460031A5BC /* SessionTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B91EEFC2A2E90460031A5BC /* SessionTimer.swift */; };
 		0B91EEFF2A2E9B350031A5BC /* SessionTimerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B91EEFE2A2E9B350031A5BC /* SessionTimerTests.swift */; };
 		0BBBFC922A37F204004061AD /* TestExample.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFE2BFF2A0DB69F003C1B07 /* TestExample.generated.swift */; };
+		0BBCC4992A4B6E4500C4BD8E /* CausalLabsSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B8E0D2429E8836100D19CA9 /* CausalLabsSDK.framework */; };
+		0BBCC4A52A4B6F9700C4BD8E /* EmptyFDLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBCC4A32A4B6F9300C4BD8E /* EmptyFDLTests.swift */; };
+		0BBCC4A72A4B6FB000C4BD8E /* TestExampleEmpty.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBCC4A02A4B6EA000C4BD8E /* TestExampleEmpty.generated.swift */; };
 		0BE01BD329F9C6F000B59647 /* HTTPURLResponse+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BE01BD229F9C6F000B59647 /* HTTPURLResponse+Extensions.swift */; };
 		0BE01BD529F9ECAC00B59647 /* URLRequest+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BE01BD429F9ECAC00B59647 /* URLRequest+Extensions.swift */; };
 		0BE01BD729F9F9B600B59647 /* Typealiases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BE01BD629F9F9B600B59647 /* Typealiases.swift */; };
@@ -46,6 +49,13 @@
 
 /* Begin PBXContainerItemProxy section */
 		0B8E0D2E29E8836200D19CA9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0B8E0D1B29E8836100D19CA9 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0B8E0D2329E8836100D19CA9;
+			remoteInfo = CausalLabsSDK;
+		};
+		0BBCC4872A4B6E4500C4BD8E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 0B8E0D1B29E8836100D19CA9 /* Project object */;
 			proxyType = 1;
@@ -83,6 +93,10 @@
 		0B91EEFC2A2E90460031A5BC /* SessionTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTimer.swift; sourceTree = "<group>"; };
 		0B91EEFE2A2E9B350031A5BC /* SessionTimerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTimerTests.swift; sourceTree = "<group>"; };
 		0BBBFC942A37F32E004061AD /* RealServerTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = RealServerTests.xctestplan; sourceTree = "<group>"; };
+		0BBCC49E2A4B6E4500C4BD8E /* EmptyFDLTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmptyFDLTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0BBCC49F2A4B6EA000C4BD8E /* TestExampleEmpty.fdl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TestExampleEmpty.fdl; sourceTree = "<group>"; };
+		0BBCC4A02A4B6EA000C4BD8E /* TestExampleEmpty.generated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestExampleEmpty.generated.swift; sourceTree = "<group>"; };
+		0BBCC4A32A4B6F9300C4BD8E /* EmptyFDLTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyFDLTests.swift; sourceTree = "<group>"; };
 		0BE01BD229F9C6F000B59647 /* HTTPURLResponse+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPURLResponse+Extensions.swift"; sourceTree = "<group>"; };
 		0BE01BD429F9ECAC00B59647 /* URLRequest+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "URLRequest+Extensions.swift"; sourceTree = "<group>"; };
 		0BE01BD629F9F9B600B59647 /* Typealiases.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typealiases.swift; sourceTree = "<group>"; };
@@ -118,6 +132,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0BBCC4982A4B6E4500C4BD8E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BBCC4992A4B6E4500C4BD8E /* CausalLabsSDK.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9C2EBA032A37DA9400F3A6B8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -145,6 +167,7 @@
 				0B8E0D2429E8836100D19CA9 /* CausalLabsSDK.framework */,
 				0B8E0D2C29E8836200D19CA9 /* UnitTests.xctest */,
 				9C2EBA062A37DA9400F3A6B8 /* RealServerTests.xctest */,
+				0BBCC49E2A4B6E4500C4BD8E /* EmptyFDLTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -177,6 +200,7 @@
 				0B8E0D3129E8836200D19CA9 /* CausalClientTests.swift */,
 				0BE01BDE29FA02AC00B59647 /* CausalEndpointTests.swift */,
 				0BE81B742A3BE5D600A0B7B0 /* CausalErrorTests.swift */,
+				0BBCC4A62A4B6FA200C4BD8E /* EmptyFDLTests */,
 				0B6484262A1304DC00EC1CC6 /* EventProtocolTests.swift */,
 				0B3717052A1469770029E91E /* FeatureCacheTests.swift */,
 				0BFE2C012A0DC19C003C1B07 /* FeatureProtocolTests.swift */,
@@ -189,6 +213,16 @@
 				0BE01BDA29FA00AE00B59647 /* URLRequestExtensionsTests.swift */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		0BBCC4A62A4B6FA200C4BD8E /* EmptyFDLTests */ = {
+			isa = PBXGroup;
+			children = (
+				0BBCC4A32A4B6F9300C4BD8E /* EmptyFDLTests.swift */,
+				0BBCC49F2A4B6EA000C4BD8E /* TestExampleEmpty.fdl */,
+				0BBCC4A02A4B6EA000C4BD8E /* TestExampleEmpty.generated.swift */,
+			);
+			path = EmptyFDLTests;
 			sourceTree = "<group>";
 		};
 		0BE01BD129F9C6DB00B59647 /* Extensions */ = {
@@ -272,6 +306,25 @@
 			productReference = 0B8E0D2C29E8836200D19CA9 /* UnitTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		0BBCC4852A4B6E4500C4BD8E /* EmptyFDLTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0BBCC49B2A4B6E4500C4BD8E /* Build configuration list for PBXNativeTarget "EmptyFDLTests" */;
+			buildPhases = (
+				0BBCC4882A4B6E4500C4BD8E /* FDL Generation */,
+				0BBCC4892A4B6E4500C4BD8E /* Sources */,
+				0BBCC4982A4B6E4500C4BD8E /* Frameworks */,
+				0BBCC49A2A4B6E4500C4BD8E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0BBCC4862A4B6E4500C4BD8E /* PBXTargetDependency */,
+			);
+			name = EmptyFDLTests;
+			productName = CausalLabsSDKTests;
+			productReference = 0BBCC49E2A4B6E4500C4BD8E /* EmptyFDLTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		9C2EBA052A37DA9400F3A6B8 /* RealServerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9C2EBA0D2A37DA9400F3A6B8 /* Build configuration list for PBXNativeTarget "RealServerTests" */;
@@ -329,6 +382,7 @@
 			targets = (
 				0B8E0D2329E8836100D19CA9 /* CausalLabsSDK */,
 				0B8E0D2B29E8836200D19CA9 /* UnitTests */,
+				0BBCC4852A4B6E4500C4BD8E /* EmptyFDLTests */,
 				9C2EBA052A37DA9400F3A6B8 /* RealServerTests */,
 			);
 		};
@@ -343,6 +397,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		0B8E0D2A29E8836200D19CA9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0BBCC49A2A4B6E4500C4BD8E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -397,6 +458,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "${PROJECT_DIR}/compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.generated.swift \\\n        ${PROJECT_DIR}/Tests/Fixtures/TestExample.fdl\n";
+		};
+		0BBCC4882A4B6E4500C4BD8E /* FDL Generation */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "FDL Generation";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "${PROJECT_DIR}/compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Tests/EmptyFDLTests/TestExampleEmpty.generated.swift \\\n        ${PROJECT_DIR}/Tests/EmptyFDLTests/TestExampleEmpty.fdl\n";
 		};
 		0BFE2BFD2A0DB5C5003C1B07 /* FDL Generation */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -465,6 +545,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0BBCC4892A4B6E4500C4BD8E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BBCC4A72A4B6FB000C4BD8E /* TestExampleEmpty.generated.swift in Sources */,
+				0BBCC4A52A4B6F9700C4BD8E /* EmptyFDLTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9C2EBA022A37DA9400F3A6B8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -481,6 +570,11 @@
 			isa = PBXTargetDependency;
 			target = 0B8E0D2329E8836100D19CA9 /* CausalLabsSDK */;
 			targetProxy = 0B8E0D2E29E8836200D19CA9 /* PBXContainerItemProxy */;
+		};
+		0BBCC4862A4B6E4500C4BD8E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0B8E0D2329E8836100D19CA9 /* CausalLabsSDK */;
+			targetProxy = 0BBCC4872A4B6E4500C4BD8E /* PBXContainerItemProxy */;
 		};
 		9C2EBA0C2A37DA9400F3A6B8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -712,6 +806,36 @@
 			};
 			name = Release;
 		};
+		0BBCC49C2A4B6E4500C4BD8E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.causallabs.CausalLabsSDKTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+			};
+			name = Debug;
+		};
+		0BBCC49D2A4B6E4500C4BD8E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.causallabs.CausalLabsSDKTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+			};
+			name = Release;
+		};
 		9C2EBA0E2A37DA9400F3A6B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -770,6 +894,15 @@
 			buildConfigurations = (
 				0B8E0D3A29E8836200D19CA9 /* Debug */,
 				0B8E0D3B29E8836200D19CA9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0BBCC49B2A4B6E4500C4BD8E /* Build configuration list for PBXNativeTarget "EmptyFDLTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0BBCC49C2A4B6E4500C4BD8E /* Debug */,
+				0BBCC49D2A4B6E4500C4BD8E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

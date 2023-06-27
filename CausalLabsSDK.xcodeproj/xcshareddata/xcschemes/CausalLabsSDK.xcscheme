@@ -30,6 +30,20 @@
                reference = "container:Tests/UnitTests.xctestplan">
             </TestPlanReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "0BBCC4852A4B6E4500C4BD8E"
+               BuildableName = "EmptyFDLTests.xctest"
+               BlueprintName = "EmptyFDLTests"
+               ReferencedContainer = "container:CausalLabsSDK.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

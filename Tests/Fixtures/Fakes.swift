@@ -42,6 +42,7 @@ extension CausalClient {
                                   sessionTimer: sessionTimer)
         client.impressionServer = impressionServer
         client.session = session
+        client.debugLogging = .verbose
         return client
     }
 }

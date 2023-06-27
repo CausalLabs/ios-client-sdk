@@ -252,7 +252,8 @@ final class CausalClientTests: XCTestCase {
 
         // request cache fill
         try await client.requestCacheFill(features: features)
-        XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "should hit network to fill cache")
+        XCTAssertEqual(mockNetworkingClient.sendRequestCallCount, 1, "should hit network to fill cache")
+        XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .features, "should hit features endpoint")
 
         let isEmpty = await cache.isEmpty
         XCTAssertFalse(isEmpty)
@@ -261,11 +262,14 @@ final class CausalClientTests: XCTestCase {
         XCTAssertEqual(count, 2)
 
         // request same features
-        mockNetworkingClient.reset()
         let requestedFeatures = try await client.requestFeatures(
             features: features,
             impressionId: fakeImpressionId
         )
+
+        // we asynchronously signal cached features
+        // thus, sleep to let that call complete
+        sleep(2)
 
         let requested1 = try XCTUnwrap(requestedFeatures[0] as? MockFeature)
         XCTAssertNotEqual(feature1, requested1, "features should not be equal because impression ids should be updated")
@@ -285,8 +289,10 @@ final class CausalClientTests: XCTestCase {
         XCTAssertEqual(try requested2.args(), try feature2.args(), "args should be equal")
         XCTAssertNotEqual(requested2.impressionIds, feature2.impressionIds, "impression ids should be updated")
 
-        // Verify NetworkClient was NOT called
-        XCTAssertFalse(mockNetworkingClient.sendRequestWasCalled, "should get features from cache, not network")
+        // Verify NetworkClient was only called twice
+        // And the most recent call should have been to signal
+        XCTAssertEqual(mockNetworkingClient.sendRequestCallCount, 2, "should get features from cache, and signal")
+        XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .signal, "should hit signal endpoint for cached features")
     }
 
     func test_requestCacheFill() async throws {
@@ -402,7 +408,6 @@ final class CausalClientTests: XCTestCase {
     }
 
     func test_defaultValues() async throws {
-
         let mockNetworkingClient = MockNetworkingClient()
         let cache = await FeatureCache()
         let initialSession = MockSession()
@@ -424,10 +429,10 @@ final class CausalClientTests: XCTestCase {
         XCTAssertTrue(body1.contains("another default"))
 
         try await crossSell1.signalAndWaitEventA(client: client)
-        XCTAssertEqual(mockNetworkingClient.receivedBodyString?.contains("7777"), true)
+        XCTAssertTrue(mockNetworkingClient.receivedBodyString.contains("7777"))
 
         try await crossSell1.signalAndWaitEventA(client: client, anInt: 8_888)
-        XCTAssertEqual(mockNetworkingClient.receivedBodyString?.contains("8888"), true)
+        XCTAssertTrue(mockNetworkingClient.receivedBodyString.contains("8888"))
 
         var crossSell2 = CrossSell(productId: "1234", price: price, withDefault: "different value")
         crossSell2 = try await client.requestFeature(feature: crossSell2)
