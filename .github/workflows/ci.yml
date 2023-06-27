@@ -32,7 +32,9 @@ jobs:
           xcrun simctl list
 
       - name: install swiftlint
-        run: brew upgrade swiftlint || brew install swiftlint
+        run: |
+          brew upgrade swiftlint || brew install swiftlint
+          brew link --overwrite swiftlint
 
       - name: unit tests
         run: |
