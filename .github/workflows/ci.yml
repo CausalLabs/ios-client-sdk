@@ -31,6 +31,9 @@ jobs:
           xcrun simctl delete unavailable
           xcrun simctl list
 
+      - name: install swiftlint
+        run: brew upgrade swiftlint || brew install swiftlint
+
       - name: unit tests
         run: |
           set -o pipefail
