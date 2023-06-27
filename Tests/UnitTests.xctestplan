@@ -19,7 +19,6 @@
       ]
     },
     "testExecutionOrdering" : "random",
-    "testRepetitionMode" : "retryOnFailure",
     "testTimeoutsEnabled" : true
   },
   "testTargets" : [
@@ -27,7 +26,14 @@
       "target" : {
         "containerPath" : "container:CausalLabsSDK.xcodeproj",
         "identifier" : "0B8E0D2B29E8836200D19CA9",
-        "name" : "CausalLabsSDKTests"
+        "name" : "UnitTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:CausalLabsSDK.xcodeproj",
+        "identifier" : "0BBCC4852A4B6E4500C4BD8E",
+        "name" : "EmptyFDLTests"
       }
     }
   ],

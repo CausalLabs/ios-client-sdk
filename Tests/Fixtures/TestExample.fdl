@@ -75,6 +75,14 @@ event ProductClick
     productid : String!
 }
 
+event GlobalNoParamEvt {}
+
+feature EmptyFeature {}
+
+feature StrangeFeature {
+    event NoParamEvent {}
+}
+
 "Feature representing a page that contains commerce buttons"
 feature Commerce
 @no_gate

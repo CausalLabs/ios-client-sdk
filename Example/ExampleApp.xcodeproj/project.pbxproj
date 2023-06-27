@@ -64,6 +64,7 @@
 		0B84D37A2A391C33000E75CC /* OtherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherView.swift; sourceTree = "<group>"; };
 		0B9EBB302A3D202200F2FECA /* ExampleView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExampleView.swift; sourceTree = "<group>"; };
 		0B9EBB322A3D20DB00F2FECA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		0BBCC4802A4B6A2500C4BD8E /* Features.fdl */ = {isa = PBXFileReference; lastKnownFileType = file; path = Features.fdl; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,9 +112,10 @@
 			children = (
 				0B1C306929E9C8AD006363EB /* App.swift */,
 				0B9EBB322A3D20DB00F2FECA /* Assets.xcassets */,
+				0B6D844029E9D46500BEDA39 /* Causal.generated.swift */,
 				0B1C306B29E9C8AD006363EB /* ContentView.swift */,
 				0B9EBB302A3D202200F2FECA /* ExampleView.swift */,
-				0B6D844029E9D46500BEDA39 /* Causal.generated.swift */,
+				0BBCC4802A4B6A2500C4BD8E /* Features.fdl */,
 				0B84D37A2A391C33000E75CC /* OtherView.swift */,
 			);
 			path = Sources;
@@ -242,7 +244,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -e ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ]; then\n  cp ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ${PROJECT_DIR}/features.fdl\nfi\n\n${PROJECT_DIR}/../compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Sources/Causal.generated.swift \\\n        ${PROJECT_DIR}/Features.fdl\n";
+			shellScript = "if [ -e ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ]; then\n  cp ${PROJECT_DIR}/../../../docs/examples/getting-started/causal.fdl ${PROJECT_DIR}/Features.fdl\nfi\n\n${PROJECT_DIR}/../compiler/bin/compiler --swift \\\n        ${PROJECT_DIR}/Sources/Causal.generated.swift \\\n        ${PROJECT_DIR}/Features.fdl\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

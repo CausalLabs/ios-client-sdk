@@ -1,5 +1,7 @@
 # Causal Labs iOS SDK
 
+[![CI](https://github.com/CausalLabs/ios-client-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/CausalLabs/ios-client-sdk/actions/workflows/ci.yml) [![CocoaPods Integration](https://github.com/CausalLabs/ios-client-sdk/actions/workflows/pod-integration.yml/badge.svg)](https://github.com/CausalLabs/ios-client-sdk/actions/workflows/pod-integration.yml)
+
 The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with native iOS apps.
 
 ## Requirements
@@ -13,12 +15,12 @@ The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with nati
 ### [CocoaPods](http://cocoapods.org)
 
 ````ruby
-pod 'CausalLabsSDK', '~> 0.1.0'
+pod 'CausalLabsSDK', '~> 0.2.0'
 ````
 
 ## Causal Compiler Configuration
 
-1. Install Java 11 (via homebrew)
+1. Install Java 11 (via [homebrew](https://brew.sh))
 
 ```bash
 brew install java11
@@ -72,9 +74,13 @@ After integrating the SDK via CocoaPods and installing Java, you'll need to add 
 
 ```bash
 ${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler --swift \
-    ${PROJECT_DIR}/PATH/TO/Causal.generated.swift \
-    ${PROJECT_DIR}/PATH/TO/Features.fdl
+    ${PROJECT_DIR}/PATH_TO_YOUR/Causal.generated.swift \
+    ${PROJECT_DIR}/PATH_TO_YOUR/Features.fdl
 ```
+
+> **Note**
+>
+> Remember to replace `PATH_TO_YOUR` above with the paths to your own files.
 
 **Now you can build and run!** If your build succeeds, you should see your generated code in `Causal.generated.swift`. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.
 
@@ -82,11 +88,37 @@ ${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler --swift \
 
 You can find our [example app here](https://github.com/CausalLabs/ios-client-sdk/tree/main/Example).
 
+Here's an example FDL file:
+
+```
+feature RatingBox {
+    args {
+        "The product that we are collecting ratings for"
+        product: String!
+    }
+
+    output {
+        "The text next to the stars that prompts the visitor to rate the product"
+        callToAction: String! = "Rate this product!"
+
+        "The button text for the user submit a review."
+        actionButton: String! = "Send Review"
+    }
+
+    "Occurs each time a rating is collected"
+    event Rating {
+        stars: Int!
+    }
+}
+```
+
 ## Documentation
 
 - [iOS SDK documentation](https://causallabs.github.io/ios-client-sdk)
 
 - [Causal reference documentation](https://tech.causallabs.io/docs/index)
+
+- [Causal Labs](https://causallabs.io)
 
 ## License
 

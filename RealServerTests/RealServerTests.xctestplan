@@ -11,7 +11,6 @@
   "defaultOptions" : {
     "codeCoverage" : false,
     "testExecutionOrdering" : "random",
-    "testRepetitionMode" : "retryOnFailure",
     "testTimeoutsEnabled" : true
   },
   "testTargets" : [
