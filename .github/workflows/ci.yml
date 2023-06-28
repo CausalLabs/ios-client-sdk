@@ -31,6 +31,9 @@ jobs:
           xcrun simctl delete unavailable
           xcrun simctl list
 
+      - name: swiftlint version
+        run: swiftlint --version
+
       - name: unit tests
         run: |
           set -o pipefail

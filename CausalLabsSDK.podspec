@@ -1,12 +1,13 @@
 Pod::Spec.new do |p|
   p.name = "CausalLabsSDK"
-  p.version = "0.2.0"
+  p.version = "0.3.0"
 
   p.summary = "iOS SDK for Causal Labs"
   p.description = "The Causal Labs iOS SDK integrates Causal with native iOS apps."
+  p.homepage = "https://www.causallabs.io"
   p.documentation_url = "https://causallabs.github.io/ios-client-sdk"
 
-  p.homepage = "https://www.causallabs.io"
+  p.changelog = "CHANGELOG.md"
   p.license = "LICENSE.txt"
   p.author = { "Causal Labs, Inc." => "support@causallabs.io" }
 

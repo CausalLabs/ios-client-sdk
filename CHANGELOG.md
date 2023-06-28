@@ -7,6 +7,11 @@ NEXT
 
 - TBA
 
+0.3.0
+-----
+
+- Fix potential issue generating Swift enum properties.
+
 0.2.0
 -----
 
