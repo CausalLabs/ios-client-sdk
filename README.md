@@ -15,7 +15,7 @@ The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with nati
 ### [CocoaPods](http://cocoapods.org)
 
 ````ruby
-pod 'CausalLabsSDK', '~> 0.2.0'
+pod 'CausalLabsSDK', '~> 0.3.0'
 ````
 
 ## Causal Compiler Configuration
