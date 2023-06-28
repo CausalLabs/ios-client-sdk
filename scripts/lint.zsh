@@ -18,7 +18,7 @@ CONFIG="./.swiftlint.yml"
 # sometimes home brew is installed in the path below
 PATH="/opt/homebrew/bin/:$PATH"
 
-# ignore linting on GitHub Actions.
+# ignore linting on GitHub Actions
 if [ -n "${GITHUB_WORKFLOW:-}" ]; then
     echo "Skipping swiftlint."
     exit 0

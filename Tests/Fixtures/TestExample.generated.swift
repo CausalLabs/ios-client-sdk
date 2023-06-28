@@ -709,7 +709,7 @@ final class ProductDisplay: FeatureProtocol {
 
     // MARK: Init
 
-    init(productName: String = "", price: Price = Price(currency: Currency.USD, amount: 0.0)) {
+    init(productName: String = "", price: Price = Price(currency: .USD, amount: 0.0)) {
         self._args = _ProductDisplayArgs(productName: productName, price: price)
     }
 
@@ -764,7 +764,7 @@ final class ProductDisplayViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productName: String = "", price: Price = Price(currency: Currency.USD, amount: 0.0), impressionId: ImpressionId = .newId()) {
+    init(productName: String = "", price: Price = Price(currency: .USD, amount: 0.0), impressionId: ImpressionId = .newId()) {
         self.productName = productName
         self.price = price
         self.impressionId = impressionId
@@ -1059,7 +1059,7 @@ final class StrangeFeatureViewModel: ObservableObject, FeatureViewModel {
 // MARK: - Commerce
 
 private struct _CommerceOutputs: Codable, Hashable {
-    var commerceButtonColor: Color = Color.PRIMARY
+    var commerceButtonColor: Color = .PRIMARY
     var ctaText: String = "View Deal"
     var nullable: String? = "non null default value"
     var impressionIds: [ImpressionId] = []
@@ -2080,11 +2080,11 @@ final class CrossSellDefaultOffViewModel: ObservableObject, FeatureViewModel {
 // MARK: - Test
 
 private struct _TestOutputs: Codable, Hashable {
-    var obj1Out: TopLevelObject = TopLevelObject(float1: 1.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "ABC", string2: nil, int1: 1, int2: nil, nested1: NestedObject(float1: 11.0, int1: -1), nested2: nil)
+    var obj1Out: TopLevelObject = TopLevelObject(float1: 1.0, float2: nil, enum1: .PRIMARY, enum2: nil, string1: "ABC", string2: nil, int1: 1, int2: nil, nested1: NestedObject(float1: 11.0, int1: -1), nested2: nil)
     var obj2Out: TopLevelObject? = nil
     var float1Out: Double = 1.0
     var float2Out: Double? = nil
-    var enum1Out: Color = Color.PRIMARY
+    var enum1Out: Color = .PRIMARY
     var enum2Out: Color? = nil
     var string1Out: String = ""
     var string2Out: String? = nil
@@ -2194,7 +2194,7 @@ final class Test: FeatureProtocol {
 
     // MARK: Init
 
-    init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = Color.PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil) {
+    init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: .PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: .SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = .PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil) {
         self._args = _TestArgs(obj1: obj1, obj2: obj2, obj3: obj3, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
     }
 
@@ -2270,7 +2270,7 @@ extension Test {
         }
     }
 
-    func signalAndWaitClick(client: CausalClient = .shared, obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) async throws {
+    func signalAndWaitClick(client: CausalClient = .shared, obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = .PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) async throws {
         let event = Click(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
         try await client.signalAndWait(
             event: event,
@@ -2278,7 +2278,7 @@ extension Test {
         )
     }
 
-    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) {
+    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = .PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?) {
         let event = Click(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
         CausalClient.shared.signalEvent(
             event,
@@ -2309,7 +2309,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: Color.PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: Color.SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = Color.PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil, impressionId: ImpressionId = .newId()) {
+    init(obj1: TopLevelObject = TopLevelObject(float1: 0.0, float2: nil, enum1: .PRIMARY, enum2: nil, string1: "", string2: nil, int1: 0, int2: nil, nested1: NestedObject(float1: 0.0, int1: 0), nested2: nil), obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: .SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = .PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil, impressionId: ImpressionId = .newId()) {
         self.obj1 = obj1
         self.obj2 = obj2
         self.obj3 = obj3
@@ -2344,7 +2344,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Events
 
-    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = Color.PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?, onError: ((Error) -> Void)? = nil) {
+    func signalClick(obj1: TopLevelObject, obj2: TopLevelObject?, float1: Double = 0.0, float2: Double?, enum1: Color = .PRIMARY, enum2: Color?, string1: String = "", string2: String?, int1: Int = 0, int2: Int?, onError: ((Error) -> Void)? = nil) {
         Task {
             do {
                 try await self.feature?.signalAndWaitClick(obj1: obj1, obj2: obj2, float1: float1, float2: float2, enum1: enum1, enum2: enum2, string1: string1, string2: string2, int1: int1, int2: int2)
@@ -2483,6 +2483,122 @@ final class DerivedFeatureViewModel: ObservableObject, FeatureViewModel {
     @MainActor
     func requestFeature() async throws {
         let _feature = DerivedFeature(arg1: self.arg1, arg2: self.arg2)
+        _feature.impressionIds = [self.impressionId]
+
+        do {
+            self.feature = try await CausalClient.shared.requestFeature(
+                feature: _feature,
+                impressionId: self.impressionId
+            )
+        } catch {
+            self.feature = _feature
+            throw error
+        }
+    }
+
+    // MARK: Events
+
+}
+
+// MARK: - WithSameNameOutput
+
+private struct _WithSameNameOutputOutputs: Codable, Hashable {
+    var Color: Color? = .PRIMARY
+    var impressionIds: [ImpressionId] = []
+}
+
+private struct _WithSameNameOutputArgs: Codable, Hashable {
+}
+
+final class WithSameNameOutput: FeatureProtocol {
+    static let name = "WithSameNameOutput"
+
+    var isActive = true
+
+    var impressionIds: [ImpressionId] {
+        get {
+            self._outputs.impressionIds
+        }
+        set {
+            self._outputs.impressionIds = newValue
+        }
+    }
+
+    // MARK: Arguments
+    private var _args: _WithSameNameOutputArgs
+
+
+    // MARK: Outputs
+    private var _outputs: _WithSameNameOutputOutputs = _WithSameNameOutputOutputs()
+
+    var Color: Color? {
+        self._outputs.Color
+    }
+
+    // MARK: Init
+
+    init() {
+        self._args = _WithSameNameOutputArgs()
+    }
+
+    private init(args: _WithSameNameOutputArgs) {
+        self._args = args
+    }
+
+    // MARK: FeatureProtocol
+
+    var id: FeatureId {
+        generateIdFrom(name: "WithSameNameOutput", args: self._args)
+    }
+
+    func args() throws -> JSONObject {
+        try encodeObject(self._args)
+    }
+
+    func updateFrom(json: JSONObject) throws {
+        self._outputs = try decodeObject(from: json, to: _WithSameNameOutputOutputs.self)
+    }
+
+    func copy(newImpressionId: ImpressionId) -> WithSameNameOutput {
+        let copy = WithSameNameOutput(args: self._args)
+        copy._outputs = self._outputs
+        copy.isActive = self.isActive
+        copy.impressionIds = [newImpressionId]
+        return copy
+    }
+}
+
+extension WithSameNameOutput: Equatable {
+    public static func == (left: WithSameNameOutput, right: WithSameNameOutput) -> Bool {
+        left.isActive == right.isActive
+        && left._args == right._args
+        && left._outputs == right._outputs
+    }
+}
+
+// MARK: WithSameNameOutput Events
+
+
+// MARK: - WithSameNameOutput View Model
+
+final class WithSameNameOutputViewModel: ObservableObject, FeatureViewModel {
+    @Published var feature: WithSameNameOutput?
+
+    // MARK: Arguments
+
+    let impressionId: ImpressionId
+
+    // MARK: Init
+
+    init(impressionId: ImpressionId = .newId()) {
+        self.impressionId = impressionId
+    }
+
+    // MARK: Feature request
+
+    @MainActor
+    func requestFeature() async throws {
+        let _feature = WithSameNameOutput()
         _feature.impressionIds = [self.impressionId]
 
         do {

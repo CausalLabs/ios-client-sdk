@@ -294,6 +294,12 @@ feature DerivedFeature
 
 }
 
+feature WithSameNameOutput {
+    output {
+        Color: Color = PRIMARY
+    }
+}
+
 session {
     args {
         userId: String
