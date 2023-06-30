@@ -38,3 +38,7 @@ test:
 .PHONY: docs
 docs:
 	./scripts/docs.zsh
+
+.PHONY: publish-pod
+publish-pod:
+	pod trunk push CausalLabsSDK.podspec

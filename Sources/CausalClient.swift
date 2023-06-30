@@ -12,6 +12,8 @@ public final class CausalClient {
     /// - Warning: You must set ``impressionServer`` and ``session`` before using.
     public static let shared = CausalClient()
 
+    // MARK: Configuration
+
     /// Enables or disables logs for debugging.
     ///
     /// - Seealso: ``DebugLogVerbosity``
@@ -65,6 +67,8 @@ public final class CausalClient {
         self.sessionTimer = sessionTimer
         self.logger = logger
     }
+
+    // MARK: Core API
 
     /// Requests a set of features to be updated from the impression server.
     ///
@@ -310,7 +314,7 @@ public final class CausalClient {
     }
 }
 
-// MARK: Convenience APIs
+// MARK: Convenience API
 
 extension CausalClient {
     /// An alternative to `requestFeatures()` that is non-throwing and updates features in-place.

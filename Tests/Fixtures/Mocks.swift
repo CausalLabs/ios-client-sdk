@@ -128,3 +128,11 @@ struct MockEvent: EventProtocol {
         JSONObject()
     }
 }
+
+final class MockFeatureViewModel: FeatureViewModel {
+    var stubbedRequestFeature: () -> Void = { }
+
+    func requestFeature() async throws {
+        self.stubbedRequestFeature()
+    }
+}

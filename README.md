@@ -14,9 +14,13 @@ The [Causal Labs](https://www.causallabs.io) iOS SDK integrates Causal with nati
 
 ### [CocoaPods](http://cocoapods.org)
 
-````ruby
+```ruby
 pod 'CausalLabsSDK', '~> 0.3.0'
-````
+```
+
+> **Note**
+>
+> If you [check-in the `Pods/` directory into git](https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control), we recommend that you git ignore `Pods/CausalLabsSDK/compiler/`.
 
 ## Causal Compiler Configuration
 
@@ -84,39 +88,17 @@ ${PROJECT_DIR}/Pods/CausalLabsSDK/compiler/bin/compiler --swift \
 
 **Now you can build and run!** If your build succeeds, you should see your generated code in `Causal.generated.swift`. If your build fails, check the build logs and ensure your paths to the compiler and source files are correct.
 
-## Example
+## Examples
 
-You can find our [example app here](https://github.com/CausalLabs/ios-client-sdk/tree/main/Example).
+- [Getting Started Guide](https://github.com/CausalLabs/ios-client-sdk/blob/main/Guides/getting-started.md)
 
-Here's an example FDL file:
-
-```
-feature RatingBox {
-    args {
-        "The product that we are collecting ratings for"
-        product: String!
-    }
-
-    output {
-        "The text next to the stars that prompts the visitor to rate the product"
-        callToAction: String! = "Rate this product!"
-
-        "The button text for the user submit a review."
-        actionButton: String! = "Send Review"
-    }
-
-    "Occurs each time a rating is collected"
-    event Rating {
-        stars: Int!
-    }
-}
-```
+- [iOS Example App](https://github.com/CausalLabs/ios-client-sdk/tree/main/Example)
 
 ## Documentation
 
-- [iOS SDK documentation](https://causallabs.github.io/ios-client-sdk)
+- [iOS SDK Documentation](https://causallabs.github.io/ios-client-sdk)
 
-- [Causal reference documentation](https://tech.causallabs.io/docs/index)
+- [Causal Reference Documentation](https://tech.causallabs.io/docs/index)
 
 - [Causal Labs](https://causallabs.io)
 
