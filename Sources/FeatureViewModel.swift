@@ -15,8 +15,8 @@ public protocol FeatureViewModel: AnyObject {
 /// A view modifier for requesting a feature.
 public struct FeatureRequest: ViewModifier {
 
-    /// The feature to request.
-    public let feature: FeatureViewModel
+    /// The feature view model.
+    public let viewModel: FeatureViewModel
 
     @State private var _hasMadeRequest = false
 
@@ -24,14 +24,14 @@ public struct FeatureRequest: ViewModifier {
     public func body(content: Content) -> some View {
         if #available(iOS 15.0, *) {
             content.task {
-                try? await self.feature.requestFeature()
+                try? await self.viewModel.requestFeature()
             }
         } else {
             content.onAppear {
                 guard !self._hasMadeRequest else { return }
                 self._hasMadeRequest = true
                 Task {
-                    try? await self.feature.requestFeature()
+                    try? await self.viewModel.requestFeature()
                 }
             }
         }
@@ -44,6 +44,6 @@ extension View {
     /// - Parameter viewModel: The view model for the feature.
     /// - Returns: The modified view.
     public func requestFeature(_ viewModel: FeatureViewModel) -> some View {
-        self.modifier(FeatureRequest(feature: viewModel))
+        self.modifier(FeatureRequest(viewModel: viewModel))
     }
 }
