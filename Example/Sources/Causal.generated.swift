@@ -52,11 +52,11 @@ private struct _SessionOutputs: Codable, Hashable {
 }
 
 private struct _SessionArgs: Codable, Hashable {
-    var deviceId: String
+    var deviceId: String?
 }
 
 private struct _SessionKeys: Codable, Hashable {
-    var deviceId: String
+    var deviceId: String?
 }
 
 
@@ -65,7 +65,7 @@ struct Session: SessionProtocol {
 
     private var _args: _SessionArgs
 
-    var deviceId: String {
+    var deviceId: String? {
         _args.deviceId
     }
 
@@ -94,6 +94,17 @@ struct Session: SessionProtocol {
     mutating func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _SessionOutputs.self)
     }
+}
+
+extension Session {
+    private init(_args: _SessionArgs) {
+        self._args = _args
+    }
+
+    static func fromDeviceId(_ deviceId: String) -> Session {
+        Session(_args: _SessionArgs(deviceId: deviceId))
+    }
+
 }
 
 // MARK: Session Events

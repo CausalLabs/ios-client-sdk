@@ -44,6 +44,7 @@
 		0BFE2C002A0DB69F003C1B07 /* TestExample.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFE2BFF2A0DB69F003C1B07 /* TestExample.generated.swift */; };
 		0BFE2C022A0DC19C003C1B07 /* FeatureProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFE2C012A0DC19C003C1B07 /* FeatureProtocolTests.swift */; };
 		0BFE2C042A0DC624003C1B07 /* SessionProtocolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFE2C032A0DC624003C1B07 /* SessionProtocolTests.swift */; };
+		542692762A5F521700794745 /* FDLGenerationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 542692732A5F49C400794745 /* FDLGenerationTests.swift */; };
 		9C2EBA0A2A37DA9400F3A6B8 /* CausalLabsSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B8E0D2429E8836100D19CA9 /* CausalLabsSDK.framework */; platformFilter = ios; };
 		9C2EBA102A37DA9F00F3A6B8 /* ClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C2EB9FB2A37D7BD00F3A6B8 /* ClientTests.swift */; };
 /* End PBXBuildFile section */
@@ -114,6 +115,7 @@
 		0BFE2BFF2A0DB69F003C1B07 /* TestExample.generated.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestExample.generated.swift; sourceTree = "<group>"; };
 		0BFE2C012A0DC19C003C1B07 /* FeatureProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureProtocolTests.swift; sourceTree = "<group>"; };
 		0BFE2C032A0DC624003C1B07 /* SessionProtocolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionProtocolTests.swift; sourceTree = "<group>"; };
+		542692732A5F49C400794745 /* FDLGenerationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FDLGenerationTests.swift; sourceTree = "<group>"; };
 		9C2EB9FB2A37D7BD00F3A6B8 /* ClientTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClientTests.swift; sourceTree = "<group>"; };
 		9C2EBA062A37DA9400F3A6B8 /* RealServerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RealServerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -207,6 +209,7 @@
 				0B3717052A1469770029E91E /* FeatureCacheTests.swift */,
 				0BFE2C012A0DC19C003C1B07 /* FeatureProtocolTests.swift */,
 				0BFA741A2A4E57CD004626C2 /* FeatureRequestViewModifierTests.swift */,
+				542692732A5F49C400794745 /* FDLGenerationTests.swift */,
 				0BE01BE229FA04CE00B59647 /* Fixtures */,
 				0BE01BDC29FA00C400B59647 /* HTTPURLResponseExtensionsTests.swift */,
 				0B43F3822A0F25110065D3F2 /* JSONProcessorTests.swift */,
@@ -535,6 +538,7 @@
 				0B3717062A1469770029E91E /* FeatureCacheTests.swift in Sources */,
 				0BE01BDD29FA00C400B59647 /* HTTPURLResponseExtensionsTests.swift in Sources */,
 				0BE01BE529FA053B00B59647 /* Fakes.swift in Sources */,
+				542692762A5F521700794745 /* FDLGenerationTests.swift in Sources */,
 				0BE01BDF29FA02AC00B59647 /* CausalEndpointTests.swift in Sources */,
 				0BFE2C002A0DB69F003C1B07 /* TestExample.generated.swift in Sources */,
 				0B91EEFF2A2E9B350031A5BC /* SessionTimerTests.swift in Sources */,
