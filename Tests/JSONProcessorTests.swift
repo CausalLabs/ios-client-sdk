@@ -45,6 +45,41 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(jsonData.jsonString(), expectedJSON)
     }
 
+    func test_encode_requestFeatures_usingStaticSessionConstructor() async throws {
+        let session = Session.fromDeviceId(fakeDeviceId)
+        let ratingBox = RatingBox(
+            productName: "name",
+            productPrice: 10.0
+        )
+        ratingBox.impressionIds = [fakeImpressionId]
+
+        let jsonData = try self.jsonProcessor.encodeRequestFeatures(
+            features: [ratingBox],
+            session: session,
+            impressionId: fakeImpressionId
+        )
+
+        let expectedJSON = """
+        {
+          "args" : {
+            "deviceId" : "\(fakeDeviceId)"
+          },
+          "impressionId" : "\(fakeImpressionId)",
+          "reqs" : [
+            {
+              "name" : "RatingBox",
+              "args" : {
+                "productName" : "name",
+                "productPrice" : 10
+              }
+            }
+          ]
+        }
+        """
+
+        XCTAssertEqual(jsonData.jsonString(), expectedJSON)
+    }
+
     func test_encode_signalEvent() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
         let event = RatingBox.Rating(stars: 5)

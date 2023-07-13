@@ -137,15 +137,17 @@ private struct _SessionOutputs: Codable, Hashable {
 }
 
 private struct _SessionArgs: Codable, Hashable {
-    var deviceId: String
+    var deviceId: String?
+    var arrivalKey: String?
     var userId: String?
-    var required: Int
+    var required: Int?
     var optional: String?
     var withDefault: String?
 }
 
 private struct _SessionKeys: Codable, Hashable {
-    var deviceId: String
+    var deviceId: String?
+    var arrivalKey: String?
 }
 
 
@@ -154,15 +156,19 @@ struct Session: SessionProtocol {
 
     private var _args: _SessionArgs
 
-    var deviceId: String {
+    var deviceId: String? {
         _args.deviceId
+    }
+
+    var arrivalKey: String? {
+        _args.arrivalKey
     }
 
     var userId: String? {
         _args.userId
     }
 
-    var required: Int {
+    var required: Int? {
         _args.required
     }
 
@@ -179,8 +185,8 @@ struct Session: SessionProtocol {
     private var _outputs: _SessionOutputs = _SessionOutputs()
 
 
-    init(deviceId: String, userId: String? = nil, required: Int, optional: String? = nil, withDefault: String? = nil) {
-        self._args = _SessionArgs(deviceId:deviceId, userId:userId, required:required, optional:optional, withDefault:withDefault)
+    init(deviceId: String, arrivalKey: String? = nil, userId: String? = nil, required: Int, optional: String? = nil, withDefault: String? = nil) {
+        self._args = _SessionArgs(deviceId:deviceId, arrivalKey:arrivalKey, userId:userId, required:required, optional:optional, withDefault:withDefault)
     }
 
     var id: SessionId {
@@ -188,7 +194,7 @@ struct Session: SessionProtocol {
     }
 
     func keys() throws -> JSONObject {
-        let keys = _SessionKeys(deviceId:_args.deviceId)
+        let keys = _SessionKeys(deviceId:_args.deviceId, arrivalKey:_args.arrivalKey)
         return try encodeObject(keys)
     }
 
@@ -199,6 +205,21 @@ struct Session: SessionProtocol {
     mutating func updateFrom(json: JSONObject) throws {
         self._outputs = try decodeObject(from: json, to: _SessionOutputs.self)
     }
+}
+
+extension Session {
+    private init(_args: _SessionArgs) {
+        self._args = _args
+    }
+
+    static func fromDeviceId(_ deviceId: String) -> Session {
+        Session(_args: _SessionArgs(deviceId: deviceId))
+    }
+
+    static func fromArrivalKey(_ arrivalKey: String) -> Session {
+        Session(_args: _SessionArgs(arrivalKey: arrivalKey))
+    }
+
 }
 
 // MARK: Session Events

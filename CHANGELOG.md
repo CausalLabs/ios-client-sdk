@@ -7,6 +7,11 @@ NEXT
 
 - TBA
 
+0.4.0
+-----
+
+- Added the ability to initialize Session objects from a session key.
+
 0.3.0
 -----
 

@@ -304,6 +304,7 @@ session {
     args {
         userId: String
         deviceId: ID! @persistent_key
+        arrivalKey: String @session_key
         required: Int!
         optional: String
         withDefault: String = "a default value"
