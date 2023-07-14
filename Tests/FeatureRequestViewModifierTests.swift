@@ -32,7 +32,7 @@ final class FeatureRequestViewModifierTests: XCTestCase {
         controller.simulateViewAppearance()
         controller.simulateViewDisappearance()
 
-        self.waitForExpectations(timeout: 5)
+        self.waitForExpectations(timeout: 1)
     }
 }
 
