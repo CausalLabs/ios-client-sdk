@@ -1,6 +1,6 @@
 Pod::Spec.new do |p|
   p.name = "CausalLabsSDK"
-  p.version = "0.4.0"
+  p.version = "0.5.0"
 
   p.summary = "iOS SDK for Causal Labs"
   p.description = "The Causal Labs iOS SDK integrates Causal with native iOS apps."
@@ -14,6 +14,8 @@ Pod::Spec.new do |p|
   p.source = { :git => "https://github.com/causallabs/ios-client-sdk.git", :tag => p.version }
   p.source_files = "Sources/**/*.swift"
   p.preserve_paths = "compiler/**/*"
+
+  p.dependency 'LDSwiftEventSource', '~> 3.0'
 
   p.ios.deployment_target = "13.0"
   p.swift_version = "5.8"

@@ -3,6 +3,8 @@
 # Generates documentation using jazzy and checks for installation.
 # Jazzy: https://github.com/realm/jazzy/releases/latest
 
+set -euxo pipefail
+
 VERSION="0.14.3"
 
 FOUND=$(jazzy --version)
@@ -15,6 +17,7 @@ if which jazzy >/dev/null; then
         --author "Causal Labs, Inc." \
         --author_url "https://www.causallabs.io" \
         --github_url "https://github.com/CausalLabs/ios-client-sdk" \
+        --build-tool-arguments -scheme,CausalLabsSDK \
         --module "CausalLabsSDK" \
         --source-directory . \
         --readme "README.md" \

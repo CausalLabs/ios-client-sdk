@@ -6,7 +6,7 @@
 PROJECT="CausalLabsSDK.xcodeproj"
 SCHEME="CausalLabsSDK"
 
-VERSION="0.52.3"
+VERSION="0.52.4"
 
 FOUND=$(swiftlint version)
 LINK="https://github.com/realm/SwiftLint"

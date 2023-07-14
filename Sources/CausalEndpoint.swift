@@ -7,6 +7,7 @@ import Foundation
 enum CausalEndpoint: String {
     case features
     case signal
+    case sse
 
     var path: String {
         self.rawValue

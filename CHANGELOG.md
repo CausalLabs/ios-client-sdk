@@ -7,6 +7,14 @@ NEXT
 
 - TBA
 
+0.5.0
+-----
+
+- Session objects generate a new `persistentId` property that corresponds to the `@persistent_key` annotation in FDL files.
+- Implemented [server sent events](https://tech.causallabs.io/docs/reference/iserver-endpoints/#iserversse).
+    - Open an SSE connection and begin listening for events using `CausalClient.shared.startSSE()`.
+    - Close the connection using `CausalClient.shared.stopSSE()`.
+
 0.4.0
 -----
 

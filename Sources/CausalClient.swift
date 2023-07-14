@@ -56,15 +56,22 @@ public final class CausalClient {
 
     private let logger: Logger
 
+    private let sseClientFactory: SSEClientFactoryProtocol
+
+    private var sseClient: SSEClientProtocol?
+
     init(networkClient: Networking = NetworkClient(),
          jsonProcessor: JSONProcessor = JSONProcessor(),
          featureCache: FeatureCache = .shared,
          sessionTimer: SessionTimer = SessionTimer(),
-         logger: Logger = .shared) {
+         sseClientFactory: SSEClientFactoryProtocol = SSEClientFactory(),
+         logger: Logger = .shared
+    ) {
         self.networkClient = networkClient
         self.jsonProcessor = jsonProcessor
         self.featureCache = featureCache
         self.sessionTimer = sessionTimer
+        self.sseClientFactory = sseClientFactory
         self.logger = logger
     }
 
@@ -282,6 +289,20 @@ public final class CausalClient {
         await self.featureCache.removeAll()
     }
 
+    /// Begins listening for server sent events.
+    public func startSSE() {
+        self._reinitializeSSEClient()
+        self.sseClient?.start()
+    }
+
+    /// Ends listening for server sent events.
+    public func stopSSE() {
+        self.sseClient?.stop()
+        self.sseClient = nil
+    }
+
+    // MARK: Private
+
     private func _updateSession(new updatedSession: any SessionProtocol) async {
         self.logger.info("Saving updated session: \(updatedSession)")
 
@@ -294,6 +315,9 @@ public final class CausalClient {
         if self.session.id != updatedSession.id {
             self.session = updatedSession
             await self._validateAndExtendSession()
+
+            // session has been updated, we need to reinit the SSE client
+            self._reinitializeSSEClient()
         }
     }
 
@@ -310,6 +334,40 @@ public final class CausalClient {
             self.sessionTimer.start()
         } else {
             self.sessionTimer.keepAlive()
+        }
+    }
+
+    private func _reinitializeSSEClient() {
+        let isStarted = self.sseClient?.isStarted ?? false
+
+        self.sseClient?.stop()
+
+        self.sseClient = self.sseClientFactory.createClient(
+            impressionServer: self.impressionServer,
+            session: self.session) { [weak self] message in
+                self?._handleSSE(message: message)
+            }
+
+        // client was initially running, so restart
+        if isStarted {
+            self.sseClient?.start()
+        }
+    }
+
+    private func _handleSSE(message: SSEMessage) {
+        switch message {
+        case .flushCache:
+            Task {
+                await self.clearCache()
+            }
+
+        case .flushFeatures(let names):
+            Task {
+                await self.featureCache.removeAllWithNames(names)
+            }
+
+        case .hello:
+            break
         }
     }
 }

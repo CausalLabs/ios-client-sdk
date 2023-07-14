@@ -11,35 +11,18 @@ let fakeImpressionId = String.newId()
 
 let fakeDeviceId = String.newId()
 
-struct FakeSession: SessionProtocol {
-
-    var deviceId = fakeDeviceId
-
-    var id: SessionId {
-        "Session"
-    }
-
-    func args() -> JSONObject {
-        ["deviceId": deviceId]
-    }
-
-    func keys() -> CausalLabsSDK.JSONObject {
-        args()
-    }
-
-    func updateFrom(json: JSONObject) { }
-}
-
 extension CausalClient {
     static func fake(
         featureCache: FeatureCache,
         mockNetworkingClient: MockNetworkingClient = MockNetworkingClient(),
         sessionTimer: SessionTimer = SessionTimer(),
-        session: any SessionProtocol = FakeSession(),
+        session: any SessionProtocol = MockSession(),
+        mockSSEClientFactory: MockSSEClientFactory = MockSSEClientFactory(),
         impressionServer: URL = fakeImpressionServer) -> CausalClient {
         let client = CausalClient(networkClient: mockNetworkingClient,
                                   featureCache: featureCache,
-                                  sessionTimer: sessionTimer)
+                                  sessionTimer: sessionTimer,
+                                  sseClientFactory: mockSSEClientFactory)
         client.impressionServer = impressionServer
         client.session = session
         client.debugLogging = .verbose

@@ -20,7 +20,7 @@ final class CausalClientTests: XCTestCase {
     }
 
     func test_session() {
-        CausalClient.shared.session = FakeSession()
+        CausalClient.shared.session = MockSession()
         XCTAssertNotNil(CausalClient.shared.session)
     }
 

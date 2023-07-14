@@ -55,9 +55,9 @@ final class FeatureCache {
         self._storage.removeValue(forKey: feature.id)
     }
 
-    func removeAllWithName(_ name: String) {
+    func removeAllWithNames(_ namesToRemove: Set<String>) {
         let itemsToRemove = self._storage.filter { _, value in
-            value.name == name
+            namesToRemove.contains(value.name)
         }
 
         itemsToRemove.forEach { _, value in
