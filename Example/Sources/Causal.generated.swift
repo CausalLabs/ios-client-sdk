@@ -61,6 +61,10 @@ private struct _SessionKeys: Codable, Hashable {
 
 
 struct Session: SessionProtocol {
+    var persistentId: DeviceId? {
+        self.deviceId
+    }
+
     // MARK: Arguments
 
     private var _args: _SessionArgs

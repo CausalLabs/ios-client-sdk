@@ -21,13 +21,13 @@ final class URLRequestExtensionsTests: XCTestCase {
     }
 
     func test_constructsValidURL_features() throws {
-        let request = try URLRequest(impressionServer: fakeImpressionServer, endpoint: .features, session: FakeSession())
+        let request = try URLRequest(impressionServer: fakeImpressionServer, endpoint: .features, session: MockSession())
         let url = try XCTUnwrap(request.url)
         XCTAssertEqual(url.absoluteString, "https://tools.causallabs.io/sandbox-iserver/features")
     }
 
     func test_constructsValidURL_signal() throws {
-        let request = try URLRequest(impressionServer: fakeImpressionServer, endpoint: .signal, session: FakeSession())
+        let request = try URLRequest(impressionServer: fakeImpressionServer, endpoint: .signal, session: MockSession())
         let url = try XCTUnwrap(request.url)
         XCTAssertEqual(url.absoluteString, "https://tools.causallabs.io/sandbox-iserver/signal")
     }

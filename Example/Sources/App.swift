@@ -10,8 +10,9 @@ import SwiftUI
 struct ExampleApp: App {
     init() {
         CausalClient.shared.impressionServer = URL(string: "https://tools.causallabs.io/sandbox-iserver")!
-        CausalClient.shared.session = Session(deviceId: UUID().uuidString)
+        CausalClient.shared.session = Session(deviceId: "ios-example-id")
         CausalClient.shared.debugLogging = .verbose
+        CausalClient.shared.startSSE()
     }
 
     var body: some Scene {

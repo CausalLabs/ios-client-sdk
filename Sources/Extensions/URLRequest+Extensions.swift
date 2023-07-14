@@ -5,6 +5,12 @@
 import Foundation
 
 extension URLRequest {
+    static var defaultHeaders: [String: String] {
+        [
+            "User-Agent": "Causal iOS Client"
+        ]
+    }
+
     init(
         impressionServer: URL,
         endpoint: CausalEndpoint,
@@ -14,23 +20,14 @@ extension URLRequest {
     ) throws {
         self.init(url: impressionServer.appendingPathComponent(endpoint.path))
         self.httpMethod = "POST"
-
+        self.httpBody = body
         self.setHeaders([
-            "User-Agent": "Causal iOS Client",
             "Accept": "application/json,text/plain",
             "Content-Type": "application/json"
         ])
-
-        let sessionKeys = try session.keys()
-        var sessionHeaders = [String: String]()
-        for (_key, _val) in sessionKeys {
-            let key = "x-causal-\(_key)".lowercased()
-            sessionHeaders[key] = _val as? String
-        }
-        self.setHeaders(sessionHeaders)
-
+        self.setHeaders(Self.defaultHeaders)
+        self.setHeaders(try session.headers())
         self.setHeaders(headers)
-        self.httpBody = body
     }
 
     mutating func setHeaders(_ headers: [String: String]) {

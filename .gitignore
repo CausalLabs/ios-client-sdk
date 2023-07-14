@@ -25,6 +25,7 @@ playground.xcworkspace
 .swiftpm
 
 # Xcode
+*.xcworkspacedata
 */build/*
 */.build/*
 *.pbxuser

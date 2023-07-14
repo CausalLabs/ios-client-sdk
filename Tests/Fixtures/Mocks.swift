@@ -73,10 +73,14 @@ final class MockNetworkingClient: Networking {
 }
 
 struct MockSession: SessionProtocol {
-    var deviceId = DeviceId.newId()
+    var persistentId: DeviceId? {
+        self.deviceId
+    }
+
+    var deviceId = fakeImpressionId
 
     var id: SessionId {
-        "Session"
+        "session" + self.deviceId
     }
 
     func args() -> JSONObject {

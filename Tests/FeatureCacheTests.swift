@@ -100,7 +100,7 @@ final class FeatureCacheTests: XCTestCase {
         XCTAssertTrue(cache.contains(feature2))
     }
 
-    func test_removeAllWithName() {
+    func test_removeAllWithNames_OneFeature() {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
@@ -112,12 +112,34 @@ final class FeatureCacheTests: XCTestCase {
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 3)
 
-        cache.removeAllWithName("RatingBox")
+        cache.removeAllWithNames(["RatingBox"])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 1)
 
         XCTAssertFalse(cache.contains(feature1))
         XCTAssertFalse(cache.contains(feature2))
+    }
+
+    func test_removeAllWithNames_MultipleFeatures() {
+        let cache = FeatureCache()
+        XCTAssertTrue(cache.isEmpty)
+
+        let feature1 = RatingBox(productName: "first", productPrice: 1)
+        let feature2 = RatingBox(productName: "second", productPrice: 2)
+        let feature3 = MockFeature()
+        let feature4 = ProductInfo()
+
+        cache.save(all: [feature1, feature2, feature3, feature4])
+        XCTAssertFalse(cache.isEmpty)
+        XCTAssertEqual(cache.count, 4)
+
+        cache.removeAllWithNames([feature1.name, feature2.name, feature3.name])
+        XCTAssertEqual(cache.count, 1)
+        XCTAssertTrue(cache.contains(feature4))
+
+        XCTAssertFalse(cache.contains(feature1))
+        XCTAssertFalse(cache.contains(feature2))
+        XCTAssertFalse(cache.contains(feature3))
     }
 
     func test_contains() {
