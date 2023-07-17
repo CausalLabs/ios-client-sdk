@@ -36,12 +36,16 @@ struct JSONProcessor {
     func encodeSignalEvent(
         event: any EventProtocol,
         session: any SessionProtocol,
-        impressionId: ImpressionId
+        impressionId: ImpressionId?
     ) throws -> Data {
         var json = JSONObject()
         json["id"] = try session.keys()
-        json["impressionId"] = impressionId
-        json["feature"] = event.featureName
+        if impressionId != nil {
+            json["impressionId"] = impressionId
+        }
+        if event.featureName != "session" {
+            json["feature"] = event.featureName
+        }
         json["event"] = event.name
         json["args"] = try event.serialized()
         return try json.data()

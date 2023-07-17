@@ -198,17 +198,17 @@ public final class CausalClient {
     ///
     /// - Parameters:
     ///   - event: The event that occurred.
-    ///   - impressionId: The impression id that matches the specific view of the feature.
+    ///   - impressionId: The impression id that matches the specific view of the feature, nil for a session event.
     ///
     /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func signalAndWait(
         event: any EventProtocol,
-        impressionId: ImpressionId
+        impressionId: ImpressionId?
     ) async throws {
         self.logger.info("""
         Signaling event...
         Event: \(event.name)
-        Impression id: \(impressionId)
+        Impression id: \(impressionId ?? "-")
         """)
 
         await self._validateAndExtendSession()
@@ -426,8 +426,8 @@ extension CausalClient {
     ///
     /// - Parameters:
     ///   - event: The event that occurred.
-    ///   - impressionId: The impression id that matches the specific view of the feature.
-    public func signalEvent(_ event: any EventProtocol, impressionId: ImpressionId) {
+    ///   - impressionId: The impression id that matches the specific view of the feature, nil for a session event.
+    public func signalEvent(_ event: any EventProtocol, impressionId: ImpressionId?) {
         Task {
             do {
                 try await self.signalAndWait(event: event, impressionId: impressionId)

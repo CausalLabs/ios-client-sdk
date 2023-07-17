@@ -16,9 +16,21 @@ final class RealServerTests: XCTestCase {
         XCTAssertFalse(httpResponse.isError)
     }
 
+    func testSessionEvent() async throws {
+        CausalClient.shared.impressionServer = URL(string: "http://localhost:3004/iserver")!
+        CausalClient.shared.session = Session(deviceId: "sessionEvent", userId: "abc", required: 1  )
+
+        // need to construct a session before sending session events
+        await CausalClient.shared.updateFeatures([])
+
+        // swiftlint:disable force_cast
+        try await (CausalClient.shared.session as! Session).signalAndWaitAddToCart(productid: "123")
+        // swiftlint:enable force_cast
+    }
+
     func testComplexFeature() async throws {
         CausalClient.shared.impressionServer = URL(string: "http://localhost:3004/iserver")!
-        CausalClient.shared.session = Session(deviceId: "1234", userId: "abc", required: 1  )
+        CausalClient.shared.session = Session(deviceId: "testComplexFeature", userId: "abc", required: 1  )
 
         let nestedIn = NestedObject(float1: 0.123, int1: 7)
         let obj1In = TopLevelObject(float1: 1.234, enum1: Color.PRIMARY, string1: "this is a test", int1: 7_890, nested1: nestedIn)
@@ -76,7 +88,9 @@ final class RealServerTests: XCTestCase {
         var objForSignal = obj1In
         objForSignal.float1 = 12
 
-        try await testOut?.signalClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
+        testOut?.signalClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
+
+        try await testOut?.signalAndWaitClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
 
         // call again, make sure signal impression goes through
         _ = try await CausalClient.shared.requestFeatures(features: featuresIn)
