@@ -27,7 +27,8 @@ final class JSONProcessorTests: XCTestCase {
         {
           "args" : {
             "deviceId" : "\(fakeDeviceId)",
-            "required" : 0
+            "required" : 0,
+            "withDefault" : "a default value"
           },
           "impressionId" : "\(fakeImpressionId)",
           "reqs" : [

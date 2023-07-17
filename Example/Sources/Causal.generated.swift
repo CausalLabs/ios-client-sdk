@@ -83,7 +83,7 @@ struct Session: SessionProtocol {
     }
 
     var id: SessionId {
-        generateIdFrom(name: "Session", args: self._args)
+        generateIdFrom(name: "session", args: self._args)
     }
 
     func keys() throws -> JSONObject {
@@ -164,7 +164,7 @@ final class RatingBox: FeatureProtocol {
 
     // MARK: Init
 
-    init(product: String = "") {
+    init(product: String) {
         self._args = _RatingBoxArgs(product: product)
     }
 
@@ -255,7 +255,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(product: String = "", impressionId: ImpressionId = .newId()) {
+    init(product: String,impressionId: ImpressionId = .newId()) {
         self.product = product
         self.impressionId = impressionId
     }
@@ -448,7 +448,7 @@ final class Feature2: FeatureProtocol {
 
     // MARK: Init
 
-    init(exampleArg: String = "") {
+    init(exampleArg: String) {
         self._args = _Feature2Args(exampleArg: exampleArg)
     }
 
@@ -539,7 +539,7 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(exampleArg: String = "", impressionId: ImpressionId = .newId()) {
+    init(exampleArg: String,impressionId: ImpressionId = .newId()) {
         self.exampleArg = exampleArg
         self.impressionId = impressionId
     }

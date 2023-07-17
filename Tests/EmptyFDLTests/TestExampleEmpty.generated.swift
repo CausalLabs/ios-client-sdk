@@ -83,7 +83,7 @@ struct Session: SessionProtocol {
     }
 
     var id: SessionId {
-        generateIdFrom(name: "Session", args: self._args)
+        generateIdFrom(name: "session", args: self._args)
     }
 
     func keys() throws -> JSONObject {

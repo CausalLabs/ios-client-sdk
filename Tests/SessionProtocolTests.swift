@@ -16,7 +16,7 @@ final class SessionProtocolTests: XCTestCase {
         let session = Session(deviceId: "xxx", required: 0)
         XCTAssertEqual(
             session.id,
-            #"{"args":{"deviceId":"xxx","required":0},"name":"Session"}"#
+            #"{"args":{"deviceId":"xxx","required":0,"withDefault":"a default value"},"name":"session"}"#
         )
     }
 
@@ -26,7 +26,8 @@ final class SessionProtocolTests: XCTestCase {
             try session.args(),
             [
                 "deviceId": fakeDeviceId,
-                "required": 0
+                "required": 0,
+                "withDefault": "a default value"
             ]
         )
     }
