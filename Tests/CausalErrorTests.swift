@@ -45,4 +45,16 @@ final class CausalErrorTests: XCTestCase {
             """
         )
     }
+
+    func test_missingSession_Description() {
+        let error = CausalError.missingSession
+
+        XCTAssertEqual(
+            error.description,
+            """
+            CausalError:
+            `CausalClient.shared.session` is unexpectedly `nil`
+            """
+        )
+    }
 }

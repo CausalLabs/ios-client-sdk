@@ -34,6 +34,8 @@
 		0BAAFC262A6083DB00B18D08 /* SSEMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAAFC252A6083DB00B18D08 /* SSEMessageTests.swift */; };
 		0BAAFC282A60863900B18D08 /* SSETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAAFC272A60863900B18D08 /* SSETests.swift */; };
 		0BAAFC2C2A60867A00B18D08 /* MockSSEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAAFC2B2A60867A00B18D08 /* MockSSEClient.swift */; };
+		0BAC2DFB2A65EB1200E147A1 /* TestUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAC2DFA2A65EB1200E147A1 /* TestUtilities.swift */; };
+		0BAC2DFC2A65EB1200E147A1 /* TestUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BAC2DFA2A65EB1200E147A1 /* TestUtilities.swift */; };
 		0BBBFC922A37F204004061AD /* TestExample.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFE2BFF2A0DB69F003C1B07 /* TestExample.generated.swift */; };
 		0BBCC4992A4B6E4500C4BD8E /* CausalLabsSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0B8E0D2429E8836100D19CA9 /* CausalLabsSDK.framework */; };
 		0BBCC4A52A4B6F9700C4BD8E /* EmptyFDLTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BBCC4A32A4B6F9300C4BD8E /* EmptyFDLTests.swift */; };
@@ -114,6 +116,7 @@
 		0BAAFC252A6083DB00B18D08 /* SSEMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEMessageTests.swift; sourceTree = "<group>"; };
 		0BAAFC272A60863900B18D08 /* SSETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSETests.swift; sourceTree = "<group>"; };
 		0BAAFC2B2A60867A00B18D08 /* MockSSEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockSSEClient.swift; sourceTree = "<group>"; };
+		0BAC2DFA2A65EB1200E147A1 /* TestUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtilities.swift; sourceTree = "<group>"; };
 		0BBBFC942A37F32E004061AD /* RealServerTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = RealServerTests.xctestplan; sourceTree = "<group>"; };
 		0BBCC49E2A4B6E4500C4BD8E /* EmptyFDLTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EmptyFDLTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BBCC49F2A4B6EA000C4BD8E /* TestExampleEmpty.fdl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TestExampleEmpty.fdl; sourceTree = "<group>"; };
@@ -288,6 +291,7 @@
 				0BAAFC2B2A60867A00B18D08 /* MockSSEClient.swift */,
 				0BFE2BFE2A0DB606003C1B07 /* TestExample.fdl */,
 				0BFE2BFF2A0DB69F003C1B07 /* TestExample.generated.swift */,
+				0BAC2DFA2A65EB1200E147A1 /* TestUtilities.swift */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -589,6 +593,7 @@
 				0B3717062A1469770029E91E /* FeatureCacheTests.swift in Sources */,
 				0BE01BDD29FA00C400B59647 /* HTTPURLResponseExtensionsTests.swift in Sources */,
 				0BE01BE529FA053B00B59647 /* Fakes.swift in Sources */,
+				0BAC2DFB2A65EB1200E147A1 /* TestUtilities.swift in Sources */,
 				542692762A5F521700794745 /* FDLGenerationTests.swift in Sources */,
 				0BAAFC222A60801100B18D08 /* CausalEventHandlerTests.swift in Sources */,
 				0BE01BDF29FA02AC00B59647 /* CausalEndpointTests.swift in Sources */,
@@ -622,6 +627,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0BAC2DFC2A65EB1200E147A1 /* TestUtilities.swift in Sources */,
 				9C2EBA102A37DA9F00F3A6B8 /* ClientTests.swift in Sources */,
 				0BBBFC922A37F204004061AD /* TestExample.generated.swift in Sources */,
 			);

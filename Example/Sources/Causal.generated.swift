@@ -255,7 +255,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(product: String,impressionId: ImpressionId = .newId()) {
+    init(product: String, impressionId: ImpressionId = .newId()) {
         self.product = product
         self.impressionId = impressionId
     }
@@ -539,7 +539,7 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(exampleArg: String,impressionId: ImpressionId = .newId()) {
+    init(exampleArg: String, impressionId: ImpressionId = .newId()) {
         self.exampleArg = exampleArg
         self.impressionId = impressionId
     }

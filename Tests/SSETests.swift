@@ -11,6 +11,14 @@ final class SSETests: XCTestCase {
         let session = MockSession()
 
         let mockFactory = MockSSEClientFactory()
+        let expectationStart = self.expectation(description: "startSSE")
+        mockFactory.stubbedClientStart = {
+            expectationStart.fulfill()
+        }
+        let expectationStop = self.expectation(description: "stopSSE")
+        mockFactory.stubbedClientStop = {
+            expectationStop.fulfill()
+        }
         XCTAssertNil(mockFactory.client)
 
         let client = CausalClient.fake(
@@ -19,17 +27,7 @@ final class SSETests: XCTestCase {
             mockSSEClientFactory: mockFactory
         )
 
-        XCTAssertNil(mockFactory.client, "client should still be nil after initialization")
-
-        let expectationStart = self.expectation(description: "startSSE")
-        mockFactory.stubbedClientStart = {
-            expectationStart.fulfill()
-        }
-
-        let expectationStop = self.expectation(description: "stopSSE")
-        mockFactory.stubbedClientStop = {
-            expectationStop.fulfill()
-        }
+        XCTAssertNotNil(mockFactory.client, "client should get initialized when setting session")
 
         client.startSSE()
 
@@ -49,22 +47,20 @@ final class SSETests: XCTestCase {
 
     func test_restartSSE() async throws {
         let mockFactory = MockSSEClientFactory()
-        let client = CausalClient.fake(
-            featureCache: await FeatureCache(),
-            mockSSEClientFactory: mockFactory
-        )
-
-        XCTAssertNil(mockFactory.client, "client should still be nil after initialization")
-
         let expectationStart = self.expectation(description: "startSSE")
         mockFactory.stubbedClientStart = {
             expectationStart.fulfill()
         }
-
         let expectationStop = self.expectation(description: "stopSSE")
         mockFactory.stubbedClientStop = {
             expectationStop.fulfill()
         }
+
+        let client = CausalClient.fake(
+            featureCache: await FeatureCache(),
+            mockSSEClientFactory: mockFactory
+        )
+        XCTAssertNotNil(mockFactory.client, "client should get initialized when setting session")
 
         client.startSSE()
 
@@ -73,8 +69,7 @@ final class SSETests: XCTestCase {
         mockFactory.stubbedClientStart = {
             expectationRestart.fulfill()
         }
-
-        client.startSSE()
+        client.session = MockSession(deviceId: "new-session-id")
 
         await self.fulfillment(
             of: [expectationStart, expectationStop, expectationRestart],

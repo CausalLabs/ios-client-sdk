@@ -8,9 +8,17 @@ import Foundation
 final class MockSSEClientFactory: SSEClientFactoryProtocol {
     var client: MockSSEClient?
 
-    var stubbedClientStart: () -> Void = { }
+    var stubbedClientStart: () -> Void = { } {
+        didSet {
+            self.client?.stubbedStart = self.stubbedClientStart
+        }
+    }
 
-    var stubbedClientStop: () -> Void = { }
+    var stubbedClientStop: () -> Void = { } {
+        didSet {
+            self.client?.stubbedStop = self.stubbedClientStop
+        }
+    }
 
     var createClientCallCount = 0
 
@@ -55,6 +63,7 @@ final class MockSSEClient: SSEClientProtocol {
     var stubbedStart: () -> Void = { }
     var startCallCount = 0
     func start() {
+        self.isStarted = true
         self.startCallCount += 1
         self.stubbedStart()
     }
@@ -62,6 +71,7 @@ final class MockSSEClient: SSEClientProtocol {
     var stubbedStop: () -> Void = { }
     var stopCallCount = 0
     func stop() {
+        self.isStarted = false
         self.stopCallCount += 1
         self.stubbedStop()
     }
