@@ -539,7 +539,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productName: String,productPrice: Double,productDescription: String? = nil,impressionId: ImpressionId = .newId()) {
+    init(productName: String, productPrice: Double, productDescription: String? = nil, impressionId: ImpressionId = .newId()) {
         self.productName = productName
         self.productPrice = productPrice
         self.productDescription = productDescription
@@ -789,7 +789,7 @@ final class ProductDisplayViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productName: String,price: Price,impressionId: ImpressionId = .newId()) {
+    init(productName: String, price: Price, impressionId: ImpressionId = .newId()) {
         self.productName = productName
         self.price = price
         self.impressionId = impressionId
@@ -1693,7 +1693,7 @@ final class CrossSellViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String,price: Price? = nil,withDefault: String? = "another default",impressionId: ImpressionId = .newId()) {
+    init(productId: String, price: Price? = nil, withDefault: String? = "another default", impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.withDefault = withDefault
@@ -1886,7 +1886,7 @@ final class CrossSell2ViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String,price: Price? = nil,impressionId: ImpressionId = .newId()) {
+    init(productId: String, price: Price? = nil, impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.impressionId = impressionId
@@ -2065,7 +2065,7 @@ final class CrossSellDefaultOffViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(productId: String,price: Price? = nil,impressionId: ImpressionId = .newId()) {
+    init(productId: String, price: Price? = nil, impressionId: ImpressionId = .newId()) {
         self.productId = productId
         self.price = price
         self.impressionId = impressionId
@@ -2334,7 +2334,7 @@ final class TestViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(obj1: TopLevelObject,obj2: TopLevelObject? = nil,obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: .SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil),float1: Double = 0.0,float2: Double? = nil,enum1: Color = .PRIMARY,enum2: Color? = nil,string1: String = "",string2: String? = nil,int1: Int = 0,int2: Int? = nil,impressionId: ImpressionId = .newId()) {
+    init(obj1: TopLevelObject, obj2: TopLevelObject? = nil, obj3: TopLevelObject? = TopLevelObject(float1: 2.0, float2: nil, enum1: .SECONDARY, enum2: nil, string1: "FOO", string2: nil, int1: 4, int2: nil, nested1: NestedObject(float1: 3.0, int1: 7), nested2: nil), float1: Double = 0.0, float2: Double? = nil, enum1: Color = .PRIMARY, enum2: Color? = nil, string1: String = "", string2: String? = nil, int1: Int = 0, int2: Int? = nil, impressionId: ImpressionId = .newId()) {
         self.obj1 = obj1
         self.obj2 = obj2
         self.obj3 = obj3
@@ -2497,7 +2497,7 @@ final class DerivedFeatureViewModel: ObservableObject, FeatureViewModel {
 
     // MARK: Init
 
-    init(arg1: String,arg2: Int,impressionId: ImpressionId = .newId()) {
+    init(arg1: String, arg2: Int, impressionId: ImpressionId = .newId()) {
         self.arg1 = arg1
         self.arg2 = arg2
         self.impressionId = impressionId

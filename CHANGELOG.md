@@ -2,6 +2,11 @@
 
 The changelog for `CausalLabs/ios-client-sdk`. Also see the [releases](https://github.com/CausalLabs/ios-client-sdk/releases) on GitHub.
 
+## 0.7.0
+
+- `CausalClient.shared.session` is now optional and no longer asserts with a `preconditionFailure()` when missing. Instead, all throwing APIs that require a session will throw a `missingSession` error if called when the `session` is `nil`. All non-throwing APIs will use default values (return default features) and not send network events.
+- `CausalClient.keepAlive()` is no longer marked `async throws`.
+
 ## 0.6.0
 
 - Fix session events
@@ -11,7 +16,6 @@ The changelog for `CausalLabs/ios-client-sdk`. Also see the [releases](https://g
 
 - Session objects generate a new `persistentId` property that corresponds to the `@persistent_key` annotation in FDL files.
 - Implemented [server sent events](https://tech.causallabs.io/docs/reference/iserver-endpoints/#iserversse).
-
   - Open an SSE connection and begin listening for events using `CausalClient.shared.startSSE()`.
   - Close the connection using `CausalClient.shared.stopSSE()`.
 

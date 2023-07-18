@@ -20,6 +20,7 @@ final class CausalClientTests: XCTestCase {
     }
 
     func test_session() {
+        CausalClient.shared.impressionServer = fakeImpressionServer
         CausalClient.shared.session = MockSession()
         XCTAssertNotNil(CausalClient.shared.session)
     }
@@ -59,6 +60,17 @@ final class CausalClientTests: XCTestCase {
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "network client should be called")
     }
 
+    func test_requestFeatures_throwsError_missingSession() async throws {
+        let client = await CausalClient.fake(featureCache: .shared)
+        client.session = nil
+
+        await AsyncAssertThrowsError(
+            try await client.requestFeatures(features: [MockFeature()])
+        ) { error in
+            XCTAssertEqual(error as? CausalError, CausalError.missingSession)
+        }
+    }
+
     func test_signalEvent_hitsCorrectEndpoint() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let client = await CausalClient.fake(
@@ -84,17 +96,23 @@ final class CausalClientTests: XCTestCase {
             mockNetworkingClient: mockNetworkingClient
         )
 
-        do {
-            try await client.signalAndWait(
-                event: MockEvent(),
-                impressionId: fakeImpressionId
-            )
-            XCTFail("client should throw error from networking client")
-        } catch {
-            XCTAssertTrue(error is CausalError)
-        }
+        await AsyncAssertThrowsError(
+            try await client.signalAndWait(event: MockEvent(), impressionId: fakeImpressionId),
+            "client should throw error from networking client"
+        )
 
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "network client should be called")
+    }
+
+    func test_signalEvent_throwsError_missingSession() async throws {
+        let client = await CausalClient.fake(featureCache: .shared)
+        client.session = nil
+
+        await AsyncAssertThrowsError(
+            try await client.signalAndWait(event: MockEvent(), impressionId: fakeImpressionId)
+        ) { error in
+            XCTAssertEqual(error as? CausalError, CausalError.missingSession)
+        }
     }
 
     func test_keepAlive_hitsCorrectEndpoint() async throws {
@@ -106,7 +124,9 @@ final class CausalClientTests: XCTestCase {
             session: session
         )
 
-        try await client.keepAlive()
+        client.keepAlive()
+        // fire-and-forget, so sleep to let call complete
+        sleep(2)
 
         XCTAssertEqual(mockNetworkingClient.receivedBaseURL, fakeImpressionServer)
         XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .signal)

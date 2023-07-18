@@ -18,14 +18,13 @@ final class RealServerTests: XCTestCase {
 
     func testSessionEvent() async throws {
         CausalClient.shared.impressionServer = URL(string: "http://localhost:3004/iserver")!
-        CausalClient.shared.session = Session(deviceId: "sessionEvent", userId: "abc", required: 1  )
+        let session = Session(deviceId: "sessionEvent", userId: "abc", required: 1)
+        CausalClient.shared.session = session
 
         // need to construct a session before sending session events
         await CausalClient.shared.updateFeatures([])
 
-        // swiftlint:disable force_cast
-        try await (CausalClient.shared.session as! Session).signalAndWaitAddToCart(productid: "123")
-        // swiftlint:enable force_cast
+        try await session.signalAndWaitAddToCart(productid: "123")
     }
 
     func testComplexFeature() async throws {
@@ -50,7 +49,7 @@ final class RealServerTests: XCTestCase {
 
         XCTAssertNotNil(testOut)
 
-        // Test args are stil what we specified
+        // Test args are still what we specified
         XCTAssertEqual(testOut?.obj1, obj1In)
         XCTAssertEqual(testOut?.float1, float1In)
         XCTAssertEqual(testOut?.enum1, enum1In)

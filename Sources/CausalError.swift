@@ -5,7 +5,7 @@
 import Foundation
 
 /// Describes possible errors thrown by the Causal SDK.
-public enum CausalError: Error, CustomStringConvertible {
+public enum CausalError: Error, Equatable, CustomStringConvertible {
     /// Indicates an error occurred when encoding, decoding, or processing json.
     ///
     /// - Parameter json: The json data causing the error.
@@ -18,6 +18,9 @@ public enum CausalError: Error, CustomStringConvertible {
     /// - Parameter response: The http response.
     /// - Parameter error: The underlying error, if available.
     case networkResponse(request: URLRequest, response: HTTPURLResponse, error: Error?)
+
+    /// Indicates that `CausalClient.shared.session` is unexpectedly `nil`.
+    case missingSession
 
     /// :nodoc:
     public var localizedDescription: String {
@@ -39,6 +42,11 @@ public enum CausalError: Error, CustomStringConvertible {
             - response headers: \(response.allHeaderFields)
             """
             underlyingError = error
+
+        case .missingSession:
+            description += """
+            `CausalClient.shared.session` is unexpectedly `nil`
+            """
         }
 
         if let underlyingError, !(underlyingError is Self) {
@@ -53,5 +61,22 @@ public enum CausalError: Error, CustomStringConvertible {
     /// :nodoc:
     public var description: String {
         self.localizedDescription
+    }
+
+    // MARK: Equatable
+
+    /// :nodoc:
+    public static func == (left: Self, right: Self) -> Bool {
+        // note: this is very rudimentary.
+        // does not compare enum payloads. intended mostly for testing.
+        switch (left, right) {
+        case (.json, .json),
+             (.networkResponse, .networkResponse),
+             (.missingSession, .missingSession):
+            return true
+
+        default:
+            return false
+        }
     }
 }

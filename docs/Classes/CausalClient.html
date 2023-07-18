@@ -17,7 +17,7 @@
     <a title="CausalClient Class Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../index.html">CausalLabsSDK 0.6.0 Docs</a> (100% documented)</p>
+        <p><a href="../index.html">CausalLabsSDK 0.7.0 Docs</a> (100% documented)</p>
         <p class="header-right"><a href="https://github.com/CausalLabs/ios-client-sdk"><img src="../img/gh.png" alt="GitHub"/>View on GitHub</a></p>
         <div class="header-right">
           <form role="search" action="../search.json">
@@ -157,7 +157,7 @@
                         <p>The <code>CausalClient</code> shared instance.</p>
 <div class="aside aside-warning">
     <p class="aside-title">Warning</p>
-    You must set <code><a href="../Classes/CausalClient.html#/s:13CausalLabsSDK0A6ClientC16impressionServer10Foundation3URLVvp">impressionServer</a></code> and <code><a href="../Classes/CausalClient.html#/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pvp">session</a></code> before using.
+    You must set <code><a href="../Classes/CausalClient.html#/s:13CausalLabsSDK0A6ClientC16impressionServer10Foundation3URLVvp">impressionServer</a></code> and <code><a href="../Classes/CausalClient.html#/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pSgvp">session</a></code> before using.
 
 </div>
 
@@ -276,9 +276,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pvp"></a>
+                    <a name="/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pSgvp"></a>
                     <a name="//apple_ref/swift/Property/session" class="dashAnchor"></a>
-                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pvp">session</a>
+                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC7sessionAA15SessionProtocol_pSgvp">session</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -293,8 +293,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd"><a href="../Structs.html#/s:13CausalLabsSDK12RequiredOnceV">@RequiredOnce</a></span>
-<span class="kd">public</span> <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="n">any</span> <span class="kt"><a href="../Protocols/SessionProtocol.html">SessionProtocol</a></span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">session</span><span class="p">:</span> <span class="p">(</span><span class="n">any</span> <span class="kt"><a href="../Protocols/SessionProtocol.html">SessionProtocol</a></span><span class="p">)?</span> <span class="p">{</span> <span class="k">get</span> <span class="k">set</span> <span class="p">}</span></code></pre>
 
                         </div>
                       </div>
@@ -501,7 +500,7 @@ If no id is provided, one will be generated automatically.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The impression id that matches the specific view of the feature, nil for a session event.</p>
+                                  <p>The impression id that matches the specific view of the feature, or <code>nil</code> for a session event.</p>
                                 </div>
                               </td>
                             </tr>
@@ -514,33 +513,25 @@ If no id is provided, one will be generated automatically.</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:13CausalLabsSDK0A6ClientC9keepAliveyyYaKF"></a>
+                    <a name="/s:13CausalLabsSDK0A6ClientC9keepAliveyyF"></a>
                     <a name="//apple_ref/swift/Method/keepAlive()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC9keepAliveyyYaKF">keepAlive()</a>
+                    <a class="token" href="#/s:13CausalLabsSDK0A6ClientC9keepAliveyyF">keepAlive()</a>
                     </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
                   </div>
                   <div class="height-container">
                     <div class="pointer-container"></div>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Instructs the server to keep the session alive.
+                        <p>Asynchronously instructs the server to keep the session alive.
 This indicates that the user is still active and the session should not expire.</p>
-<div class="aside aside-throws">
-    <p class="aside-title">Throws</p>
-    A <code><a href="../Enums/CausalError.html">CausalError</a></code> or an iOS SDK <code>Error</code>.
-
-</div>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">keepAlive</span><span class="p">()</span> <span class="n">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">func</span> <span class="nf">keepAlive</span><span class="p">()</span></code></pre>
 
                         </div>
                       </div>
@@ -845,7 +836,7 @@ If no id is provided, one will be generated automatically.</p>
                               </td>
                               <td>
                                 <div>
-                                  <p>The impression id that matches the specific view of the feature, nil for a session event.</p>
+                                  <p>The impression id that matches the specific view of the feature, or <code>nil</code> for a session event.</p>
                                 </div>
                               </td>
                             </tr>
@@ -860,7 +851,7 @@ If no id is provided, one will be generated automatically.</p>
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2023 <a class="link" href="https://www.causallabs.io" target="_blank" rel="external noopener">Causal Labs, Inc.</a>. All rights reserved. (Last updated: 2023-07-17)</p>
+          <p>&copy; 2023 <a class="link" href="https://www.causallabs.io" target="_blank" rel="external noopener">Causal Labs, Inc.</a>. All rights reserved. (Last updated: 2023-07-18)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.14.3</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
