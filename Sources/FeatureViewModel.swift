@@ -9,7 +9,7 @@ import SwiftUI
 public protocol FeatureViewModel: AnyObject {
 
     /// Requests this view model's feature.
-    func requestFeature() async throws
+    func requestFeature() async
 }
 
 /// A view modifier for requesting a feature.
@@ -20,18 +20,20 @@ public struct FeatureRequest: ViewModifier {
 
     @State private var _hasMadeRequest = false
 
-    /// :nodoc:
+    /// Modifies the inner `content` to fetch the specified feature when the view initially appears.
     public func body(content: Content) -> some View {
         if #available(iOS 15.0, *) {
             content.task {
-                try? await self.viewModel.requestFeature()
+                guard !self._hasMadeRequest else { return }
+                self._hasMadeRequest = true
+                await self.viewModel.requestFeature()
             }
         } else {
             content.onAppear {
                 guard !self._hasMadeRequest else { return }
                 self._hasMadeRequest = true
                 Task {
-                    try? await self.viewModel.requestFeature()
+                    await self.viewModel.requestFeature()
                 }
             }
         }

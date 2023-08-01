@@ -22,7 +22,10 @@ public enum CausalError: Error, Equatable, CustomStringConvertible {
     /// Indicates that `CausalClient.shared.session` is unexpectedly `nil`.
     case missingSession
 
-    /// :nodoc:
+    /// Indicates that there was an error when trying to parse an object.
+    case parseFailure(message: String)
+
+    /// A textual representation of this ``CausalError``.
     public var localizedDescription: String {
         var description = "\(type(of: self)):\n"
         var underlyingError: Error?
@@ -47,6 +50,11 @@ public enum CausalError: Error, Equatable, CustomStringConvertible {
             description += """
             `CausalClient.shared.session` is unexpectedly `nil`
             """
+
+        case .parseFailure(let message):
+            description += """
+            - message: \(message)
+            """
         }
 
         if let underlyingError, !(underlyingError is Self) {
@@ -58,22 +66,29 @@ public enum CausalError: Error, Equatable, CustomStringConvertible {
         return description
     }
 
-    /// :nodoc:
+    /// A textual representation of this ``CausalError``.
     public var description: String {
         self.localizedDescription
     }
 
     // MARK: Equatable
 
-    /// :nodoc:
+    /// Confirms whether ``CausalError`` instances are equal
+    /// - Parameters:
+    ///   - left: First ``CausalError`` we are comparing
+    ///   - right: Second ``CausalError`` we are comparing
+    /// - Returns: `true` if the two instances are equal, false otherwise.
     public static func == (left: Self, right: Self) -> Bool {
         // note: this is very rudimentary.
         // does not compare enum payloads. intended mostly for testing.
         switch (left, right) {
         case (.json, .json),
-             (.networkResponse, .networkResponse),
-             (.missingSession, .missingSession):
+            (.networkResponse, .networkResponse),
+            (.missingSession, .missingSession):
             return true
+
+        case let (.parseFailure(lhsMessage), .parseFailure(rhsMessage)):
+            return lhsMessage == rhsMessage
 
         default:
             return false

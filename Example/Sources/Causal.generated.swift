@@ -119,7 +119,7 @@ extension Session {
 private struct _RatingBoxOutputs: Codable, Hashable {
     var callToAction: String = "Rate this product!"
     var actionButton: String = "Send Review"
-    var impressionIds: [ImpressionId] = []
+    var _impressionId: ImpressionId?
 }
 
 private struct _RatingBoxArgs: Codable, Hashable {
@@ -133,12 +133,12 @@ final class RatingBox: FeatureProtocol {
 
     var isActive = true
 
-    var impressionIds: [ImpressionId] {
+    var impressionId: ImpressionId? {
         get {
-            self._outputs.impressionIds
+            self._outputs._impressionId
         }
         set {
-            self._outputs.impressionIds = newValue
+            self._outputs._impressionId = newValue
         }
     }
 
@@ -182,16 +182,13 @@ final class RatingBox: FeatureProtocol {
         try encodeObject(self._args)
     }
 
-    func updateFrom(json: JSONObject) throws {
-        self._outputs = try decodeObject(from: json, to: _RatingBoxOutputs.self)
+    func outputs() throws -> JSONObject {
+        try encodeObject(self._outputs)
     }
 
-    func copy(newImpressionId: ImpressionId) -> RatingBox {
-        let copy = RatingBox(args: self._args)
-        copy._outputs = self._outputs
-        copy.isActive = self.isActive
-        copy.impressionIds = [newImpressionId]
-        return copy
+    func update(outputJson: JSONObject, isActive: Bool) throws {
+        self._outputs = try decodeObject(from: outputJson, to: _RatingBoxOutputs.self)
+        self.isActive = isActive
     }
 }
 
@@ -229,7 +226,7 @@ extension RatingBox {
         let event = Rating(stars: stars)
         try await client.signalAndWait(
             event: event,
-            impressionId: self.impressionIds.first ?? ""
+            impressionId: self.impressionId ?? ""
         )
     }
 
@@ -238,7 +235,7 @@ extension RatingBox {
         let event = Rating(stars: stars)
         CausalClient.shared.signalEvent(
             event,
-            impressionId: self.impressionIds.first ?? ""
+            impressionId: self.impressionId ?? ""
         )
     }
 }
@@ -263,18 +260,11 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
     // MARK: Feature request
 
     @MainActor
-    func requestFeature() async throws {
+    func requestFeature() async {
         let _feature = RatingBox(product: self.product)
-        _feature.impressionIds = [self.impressionId]
-
-        do {
-            self.feature = try await CausalClient.shared.requestFeature(
-                feature: _feature,
-                impressionId: self.impressionId
-            )
-        } catch {
+        let result = await CausalClient.shared.requestFeature(_feature, impressionId: self.impressionId)
+        if result == nil {
             self.feature = _feature
-            throw error
         }
     }
 
@@ -294,7 +284,7 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 // MARK: - ProductInfo
 
 private struct _ProductInfoOutputs: Codable, Hashable {
-    var impressionIds: [ImpressionId] = []
+    var _impressionId: ImpressionId?
 }
 
 private struct _ProductInfoArgs: Codable, Hashable {
@@ -306,12 +296,12 @@ final class ProductInfo: FeatureProtocol {
 
     var isActive = true
 
-    var impressionIds: [ImpressionId] {
+    var impressionId: ImpressionId? {
         get {
-            self._outputs.impressionIds
+            self._outputs._impressionId
         }
         set {
-            self._outputs.impressionIds = newValue
+            self._outputs._impressionId = newValue
         }
     }
 
@@ -343,16 +333,13 @@ final class ProductInfo: FeatureProtocol {
         try encodeObject(self._args)
     }
 
-    func updateFrom(json: JSONObject) throws {
-        self._outputs = try decodeObject(from: json, to: _ProductInfoOutputs.self)
+    func outputs() throws -> JSONObject {
+        try encodeObject(self._outputs)
     }
 
-    func copy(newImpressionId: ImpressionId) -> ProductInfo {
-        let copy = ProductInfo(args: self._args)
-        copy._outputs = self._outputs
-        copy.isActive = self.isActive
-        copy.impressionIds = [newImpressionId]
-        return copy
+    func update(outputJson: JSONObject, isActive: Bool) throws {
+        self._outputs = try decodeObject(from: outputJson, to: _ProductInfoOutputs.self)
+        self.isActive = isActive
     }
 }
 
@@ -385,18 +372,11 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
     // MARK: Feature request
 
     @MainActor
-    func requestFeature() async throws {
+    func requestFeature() async {
         let _feature = ProductInfo()
-        _feature.impressionIds = [self.impressionId]
-
-        do {
-            self.feature = try await CausalClient.shared.requestFeature(
-                feature: _feature,
-                impressionId: self.impressionId
-            )
-        } catch {
+        let result = await CausalClient.shared.requestFeature(_feature, impressionId: self.impressionId)
+        if result == nil {
             self.feature = _feature
-            throw error
         }
     }
 
@@ -408,7 +388,7 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
 
 private struct _Feature2Outputs: Codable, Hashable {
     var exampleOutput: String = "Example output"
-    var impressionIds: [ImpressionId] = []
+    var _impressionId: ImpressionId?
 }
 
 private struct _Feature2Args: Codable, Hashable {
@@ -421,12 +401,12 @@ final class Feature2: FeatureProtocol {
 
     var isActive = true
 
-    var impressionIds: [ImpressionId] {
+    var impressionId: ImpressionId? {
         get {
-            self._outputs.impressionIds
+            self._outputs._impressionId
         }
         set {
-            self._outputs.impressionIds = newValue
+            self._outputs._impressionId = newValue
         }
     }
 
@@ -466,16 +446,13 @@ final class Feature2: FeatureProtocol {
         try encodeObject(self._args)
     }
 
-    func updateFrom(json: JSONObject) throws {
-        self._outputs = try decodeObject(from: json, to: _Feature2Outputs.self)
+    func outputs() throws -> JSONObject {
+        try encodeObject(self._outputs)
     }
 
-    func copy(newImpressionId: ImpressionId) -> Feature2 {
-        let copy = Feature2(args: self._args)
-        copy._outputs = self._outputs
-        copy.isActive = self.isActive
-        copy.impressionIds = [newImpressionId]
-        return copy
+    func update(outputJson: JSONObject, isActive: Bool) throws {
+        self._outputs = try decodeObject(from: outputJson, to: _Feature2Outputs.self)
+        self.isActive = isActive
     }
 }
 
@@ -513,7 +490,7 @@ extension Feature2 {
         let event = ExampleEvent(data: data)
         try await client.signalAndWait(
             event: event,
-            impressionId: self.impressionIds.first ?? ""
+            impressionId: self.impressionId ?? ""
         )
     }
 
@@ -522,7 +499,7 @@ extension Feature2 {
         let event = ExampleEvent(data: data)
         CausalClient.shared.signalEvent(
             event,
-            impressionId: self.impressionIds.first ?? ""
+            impressionId: self.impressionId ?? ""
         )
     }
 }
@@ -547,18 +524,11 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
     // MARK: Feature request
 
     @MainActor
-    func requestFeature() async throws {
+    func requestFeature() async {
         let _feature = Feature2(exampleArg: self.exampleArg)
-        _feature.impressionIds = [self.impressionId]
-
-        do {
-            self.feature = try await CausalClient.shared.requestFeature(
-                feature: _feature,
-                impressionId: self.impressionId
-            )
-        } catch {
+        let result = await CausalClient.shared.requestFeature(_feature, impressionId: self.impressionId)
+        if result == nil {
             self.feature = _feature
-            throw error
         }
     }
 

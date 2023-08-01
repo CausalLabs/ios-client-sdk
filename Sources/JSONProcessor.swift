@@ -62,7 +62,7 @@ struct JSONProcessor {
         var featureImpressionJSON = JSONObject()
         features.forEach {
             var impressionJSON = ["newImpression": impressionId]
-            if let oldImpression = $0.impressionIds.first {
+            if let oldImpression = $0.impressionId {
                 impressionJSON["impression"] = oldImpression
             }
             featureImpressionJSON[$0.name] = impressionJSON
@@ -111,41 +111,50 @@ struct JSONProcessor {
     func decodeRequestFeatures(
         response: Data,
         features: [any FeatureProtocol],
-        session: any SessionProtocol
+        session: any SessionProtocol,
+        impressionId: ImpressionId?
     ) throws -> (any SessionProtocol, [any FeatureProtocol]) {
         let responseJSON = try self.decode(data: response)
 
+        guard let sessionJSON = responseJSON["session"] as? JSONObject else {
+            throw CausalError.parseFailure(message: "Unable to locate `session` in the response.")
+        }
+
+        guard let impressions = responseJSON["impressions"] as? [Any] else {
+            throw CausalError.parseFailure(message: "Unable to locate `impressions` in the response.")
+        }
+
+        guard impressions.count == features.count else {
+            // Mismatch on feature requests and impressions.
+            // This should not happen. If it does, return features with defaults.
+            throw CausalError.parseFailure(message: "Requested \(features.count) features, but received \(impressions.count) impressions.")
+        }
+
         var updatedFeatures = features
         var updatedSession = session
+        try updatedSession.updateFrom(json: sessionJSON)
 
-        if let sessionJSON = responseJSON["session"] as? JSONObject {
-            try updatedSession.updateFrom(json: sessionJSON)
+        for index in 0..<impressions.count {
+            let eachImpression = impressions[index]
+            let eachFeature = updatedFeatures[index]
 
-            if let impressions = responseJSON["impressions"] as? [Any] {
+            if let impressionString = eachImpression as? String, impressionString == "OFF" {
+                eachFeature.isActive = false
+            } else if let impressionJSON = eachImpression as? JSONObject {
+                try eachFeature.update(outputJson: impressionJSON, isActive: true)
 
-                assert(impressions.count == features.count)
-                if impressions.count != features.count {
-                    // Mismatch on feature requests and impressions.
-                    // This should not happen. If it does, return features with defaults.
-                    self.logger.warning("Requested \(features.count) features, but received \(impressions.count) impressions.")
-                    return (updatedSession, features)
+                // If an impression id is supplied then we should overwrite the feature
+                // outputs _impressionId with that value. If we do not have an impression
+                // id then this is being called as part of a cache fill and we should
+                // retain the _impressionId data that is returned from the server.
+                if impressionId != nil {
+                    eachFeature.impressionId = impressionId
                 }
 
-                for index in 0..<impressions.count {
-                    let eachImpression = impressions[index]
-                    let eachFeature = updatedFeatures[index]
-
-                    if let impressionString = eachImpression as? String, impressionString == "OFF" {
-                        eachFeature.isActive = false
-                    } else if let impressionJSON = eachImpression as? JSONObject {
-                        try eachFeature.updateFrom(json: impressionJSON)
-                        eachFeature.isActive = true
-                    } else {
-                        self.logger.warning("Received unknown impression data: \(eachImpression)")
-                    }
-                    updatedFeatures[index] = eachFeature
-                }
+            } else {
+                throw CausalError.parseFailure(message: "Received unknown impression data: \(eachImpression)")
             }
+            updatedFeatures[index] = eachFeature
         }
         return (updatedSession, updatedFeatures)
     }

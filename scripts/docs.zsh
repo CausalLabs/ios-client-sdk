@@ -1,47 +1,48 @@
 #!/bin/zsh
 
-# Generates documentation using jazzy and checks for installation.
-# Jazzy: https://github.com/realm/jazzy/releases/latest
+# Generates documentation using SourceDocs and checks for installation.
+# SourceDocs: https://github.com/SourceDocs/SourceDocs
 
 set -euxo pipefail
 
-VERSION="0.14.3"
+VERSION="2.0.1"
+INSTALL="brew install sourcedocs"
+DOC_PATH="../../docs/docs/reference/iOS"
+CATEGORY_FILE="_category_.yml"
 
-FOUND=$(jazzy --version)
-LINK="https://github.com/realm/jazzy"
-INSTALL="gem install jazzy"
+if which sourcedocs >/dev/null; then
+    FOUND=$(sourcedocs version)
+    if [ "$FOUND" != "SourceDocs v$VERSION" ]; then
+        echo "
+        Warning: incorrect SourceDocs installed! Please upgrade.
+        Expected: $VERSION
+        Found: $FOUND
 
-if which jazzy >/dev/null; then
-    jazzy \
+        Install: $INSTALL
+        "
+        exit 1
+    fi
+
+    # copy the category file to a safe place
+    TMP_FILE=$(mktemp -t category.yml.XXXXXXXXXX)
+    cp $DOC_PATH/$CATEGORY_FILE $TMP_FILE
+
+    sourcedocs generate \
         --clean \
-        --author "Causal Labs, Inc." \
-        --author_url "https://www.causallabs.io" \
-        --github_url "https://github.com/CausalLabs/ios-client-sdk" \
-        --build-tool-arguments -scheme,CausalLabsSDK \
-        --module "CausalLabsSDK" \
-        --source-directory . \
-        --readme "README.md" \
-        --documentation "Guides/*.md" \
-        --output docs/
+        --output-folder $DOC_PATH \
+        --reproducible-docs \
+        --min-acl public \
+        -- -scheme CausalLabsSDK
+
+    # re-add the category file
+    mv $TMP_FILE $DOC_PATH/$CATEGORY_FILE
 else
     echo "
-    Error: Jazzy not installed!
+    Error: SourceDocs not installed!
 
-    Download: $LINK
     Install: $INSTALL
     "
     exit 1
-fi
-
-if [ "$FOUND" != "jazzy version: $VERSION" ]; then
-    echo "
-    Warning: incorrect Jazzy installed! Please upgrade.
-    Expected: $VERSION
-    Found: $FOUND
-
-    Download: $LINK
-    Install: $INSTALL
-    "
 fi
 
 exit

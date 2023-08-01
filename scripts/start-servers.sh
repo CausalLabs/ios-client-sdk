@@ -25,7 +25,8 @@ if [[ -z "$PID" ]]; then
     regression/start-config-ui.sh
 fi
 
-echo -e "\n****** start webhook if not running"
+echo -e "\n****** start the webhook"
+regression/kill-webhook.sh
 PID=$(lsof -t -i :3002 -sTCP:LISTEN) || true
 if [[ -z "$PID" ]]; then
     regression/start-webhook.sh

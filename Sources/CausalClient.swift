@@ -16,23 +16,24 @@ public final class CausalClient {
 
     /// Enables or disables logs for debugging.
     ///
-    /// - Seealso: ``DebugLogVerbosity``
+    /// - See also: ``DebugLogVerbosity``
     public var debugLogging: DebugLogVerbosity {
         get {
-            self.logger.verbosity
+            logger.verbosity
         }
         set {
-            self.logger.verbosity = newValue
+            logger.verbosity = newValue
         }
     }
 
     /// A configuration object that defines behavior and policies for a URL session.
+    /// This can be used to supply custom request timeout intervals, additional http headers, and other request configurations.
     public var configuration: URLSessionConfiguration {
         get {
-            self.networkClient.configuration
+            networkClient.configuration
         }
         set {
-            self.networkClient.configuration = newValue
+            networkClient.configuration = newValue
         }
     }
 
@@ -43,21 +44,21 @@ public final class CausalClient {
     /// The current session.
     public var session: (any SessionProtocol)? {
         didSet {
-            self.logger.info("Saving updated session: \(String(describing: self.session))")
+            logger.info("Saving updated session: \(String(describing: session))")
 
             // if previously nil and setting to nil, ignore
-            if self.session == nil && oldValue == nil {
+            if session == nil && oldValue == nil {
                 return
             }
 
-            let newSessionId = self.session?.id ?? ""
+            let newSessionId = session?.id ?? ""
             let oldSessionId = oldValue?.id ?? ""
 
             // session has been updated, need to invalidate (and thus empty cache)
             if newSessionId != oldSessionId {
-                self.logger.info("New session has started. SessionId: \(newSessionId)")
-                self.sessionTimer.invalidate()
-                self._reinitializeSSEClientIfNeeded()
+                logger.info("New session has started. SessionId: \(newSessionId)")
+                sessionTimer.invalidate()
+                _reinitializeSSEClientIfNeeded()
             }
         }
     }
@@ -95,74 +96,126 @@ public final class CausalClient {
 
     // MARK: Core API
 
-    /// Requests a set of features to be updated from the impression server.
+    /// Requests a set of features to be updated from the impression server and updates them in-place.
+    ///
+    /// If your project is using SwiftUI we encourage the usage of the compiler generated view models in
+    /// addition to the `requestCacheFill()` method to request features from the impression service.
+    /// However, If you wish to use the `CausalClient` directly then this method is recommended.
+    ///
+    /// > Note: The `features` instances contain the default values for all feature outputs. In the
+    /// > case of an error the default values will still be available to render the feature to the screen.
     ///
     /// - Parameters:
-    ///   - features: The features to request.
+    ///   - features: The features to request. Upon successful completion the `features` instances
+    ///     will be updated in-place from the impression service data.
     ///   - impressionId: The impression id that matches the specific view of the requested features.
     ///     If no id is provided, one will be generated automatically.
     ///
-    /// - Returns: The updated features from the server.
-    ///
-    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
+    /// - Returns: A ``CausalError`` or an iOS SDK `Error`, if one occurred.
+    @discardableResult
     public func requestFeatures(
-        features: [any FeatureProtocol],
+        _ features: [any FeatureProtocol],
         impressionId: ImpressionId = .newId()
-    ) async throws -> [any FeatureProtocol] {
-        let session = try self._validateSession()
+    ) async -> Error? {
+        guard let session = try? _validateSession() else {
+            return CausalError.missingSession
+        }
 
-        self.logger.info("""
+        logger.info("""
         Requesting features...
         Features: \(features)
         Impression Id: \(impressionId)
         """)
 
-        if await !self.featureCache.isEmpty {
-            let cachedFeatures = await self.featureCache.fetch(all: features)
+        if await !featureCache.isEmpty {
+            let cachedFeatures = await featureCache.fetch(all: features)
             if !cachedFeatures.isEmpty,
                // ensure we fetched all requested features from the cache
                cachedFeatures.count == features.count {
 
                 _ = Task {
-                    try await self._signalCachedFeatures(
+                    try await _signalCachedFeatures(
                         cachedFeatures,
                         session: session,
                         impressionId: impressionId
                     )
                 }
 
-                self.logger.info("Returning cached features with impression id: \(impressionId)")
+                logger.info("Hydrating from cached features with impression id: \(impressionId)")
 
-                return cachedFeatures.map { $0.copy(newImpressionId: impressionId) }
+                // Hydrate each of the input feature instances with the data (outputs & isActive)
+                // from the cached value and update the impression id.
+                do {
+                    for (index, cachedFeature) in cachedFeatures.enumerated() {
+                        let inputFeature = features[index]
+                        let outputJson = try cachedFeature.outputs()
+                        try inputFeature.update(outputJson: outputJson, isActive: cachedFeature.isActive)
+                        inputFeature.impressionId = impressionId
+                    }
+                    return nil
+                } catch {
+                    logger.error("Update features error", error: error)
+                    return error
+                }
             }
         }
 
         let task = Task {
-            let jsonData = try self.jsonProcessor.encodeRequestFeatures(
+            let jsonData = try jsonProcessor.encodeRequestFeatures(
                 features: features,
                 session: session,
                 impressionId: impressionId
             )
 
-            let responseData = try await self.networkClient.sendRequest(
-                baseURL: self.impressionServer,
+            let responseData = try await networkClient.sendRequest(
+                baseURL: impressionServer,
                 endpoint: .features,
                 session: session,
                 body: jsonData
             )
 
-            let (updatedSession, updatedFeatures) = try self.jsonProcessor.decodeRequestFeatures(
+            let (updatedSession, updatedFeatures) = try jsonProcessor.decodeRequestFeatures(
                 response: responseData,
                 features: features,
-                session: session
+                session: session,
+                impressionId: impressionId
             )
 
-            await self._updateSession(updatedSession, andSaveFeatures: updatedFeatures)
+            await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
 
             return updatedFeatures
         }
 
-        return try await task.result.get()
+        do {
+            _ = try await task.result.get()
+            return nil
+        } catch {
+            logger.error("Update features error", error: error)
+            return error
+        }
+    }
+
+    /// Requests a single feature to be updated from the impression server. The passed in `feature` will be updated in-place
+    /// with the results from the impression service.
+    ///
+    /// - Note: In the event of an error the input `feature` instance contains default values
+    ///     and can be used to render the feature to the screen.
+    ///
+    /// - Parameters:
+    ///   - feature: The feature to request. Upon successful completion the `feature` instance
+    ///     will be updated in-place from the impression service data.
+    ///   - impressionId: The impression id that matches the specific view of the requested feature.
+    ///                   If no id is provided, one will be generated automatically.
+    ///
+    /// - Returns: The updated feature from the server, or the default feature if there was an error.
+    ///
+    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
+    @discardableResult
+    public func requestFeature<T: FeatureProtocol>(
+        _ feature: T,
+        impressionId: ImpressionId = .newId()
+    ) async -> Error? {
+        await requestFeatures([feature], impressionId: impressionId)
     }
 
     /// Requests a set of features that will be cached for later use.
@@ -172,39 +225,55 @@ public final class CausalClient {
     ///
     /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
     public func requestCacheFill(features: [any FeatureProtocol]) async throws {
-        let session = try self._validateSession()
+        let session = try _validateSession()
 
-        let featuresNotCached = await self.featureCache.filter(notIncluded: features)
-
-        self.logger.info("""
+        logger.info("""
         Requesting cache fill...
-        Features: \(featuresNotCached)
+        Features: \(features)
         """)
 
         let task = Task {
-            let jsonData = try self.jsonProcessor.encodeRequestFeatures(
-                features: featuresNotCached,
+            let jsonData = try jsonProcessor.encodeRequestFeatures(
+                features: features,
                 session: session,
                 impressionId: nil
             )
 
-            let responseData = try await self.networkClient.sendRequest(
-                baseURL: self.impressionServer,
+            let responseData = try await networkClient.sendRequest(
+                baseURL: impressionServer,
                 endpoint: .features,
                 session: session,
                 body: jsonData
             )
 
-            let (updatedSession, updatedFeatures) = try self.jsonProcessor.decodeRequestFeatures(
+            let (updatedSession, updatedFeatures) = try jsonProcessor.decodeRequestFeatures(
                 response: responseData,
-                features: featuresNotCached,
-                session: session
+                features: features,
+                session: session,
+                impressionId: nil
             )
 
-            await self._updateSession(updatedSession, andSaveFeatures: updatedFeatures)
+            await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
         }
 
         try await task.result.get()
+    }
+
+    /// An alternative to `signalAndWait()` that is "fire-and-forget" and ignores errors.
+    ///
+    /// Signals that the specified event occurred for an impression.
+    ///
+    /// - Parameters:
+    ///   - event: The event that occurred.
+    ///   - impressionId: The impression id that matches the specific view of the feature, or `nil` for a session event.
+    public func signalEvent(_ event: any EventProtocol, impressionId: ImpressionId?) {
+        Task {
+            do {
+                try await signalAndWait(event: event, impressionId: impressionId)
+            } catch {
+                logger.error("Signal and wait error", error: error)
+            }
+        }
     }
 
     /// Signals that the specified event occurred for an impression.
@@ -218,23 +287,23 @@ public final class CausalClient {
         event: any EventProtocol,
         impressionId: ImpressionId?
     ) async throws {
-        let session = try self._validateSession()
+        let session = try _validateSession()
 
-        self.logger.info("""
+        logger.info("""
         Signaling event...
         Event: \(event.name)
         Impression id: \(impressionId ?? "-")
         """)
 
         let task = Task {
-            let jsonData = try self.jsonProcessor.encodeSignalEvent(
+            let jsonData = try jsonProcessor.encodeSignalEvent(
                 event: event,
                 session: session,
                 impressionId: impressionId
             )
 
-            try await self.networkClient.sendRequest(
-                baseURL: self.impressionServer,
+            try await networkClient.sendRequest(
+                baseURL: impressionServer,
                 endpoint: .signal,
                 session: session,
                 body: jsonData
@@ -250,21 +319,21 @@ public final class CausalClient {
         session: any SessionProtocol,
         impressionId: ImpressionId
     ) async throws {
-        self.logger.info("""
+        logger.info("""
         Signaling cached features...
         Features: \(features.map { $0.name })
         Impression id: \(impressionId)
         """)
 
         let task = Task {
-            let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(
+            let jsonData = try jsonProcessor.encodeSignalCachedFeatures(
                 features: features,
                 session: session,
                 impressionId: impressionId
             )
 
-            try await self.networkClient.sendRequest(
-                baseURL: self.impressionServer,
+            try await networkClient.sendRequest(
+                baseURL: impressionServer,
                 endpoint: .signal,
                 session: session,
                 body: jsonData
@@ -277,17 +346,17 @@ public final class CausalClient {
     /// Asynchronously instructs the server to keep the session alive.
     /// This indicates that the user is still active and the session should not expire.
     public func keepAlive() {
-        guard let session = try? self._validateSession() else {
+        guard let session = try? _validateSession() else {
             return
         }
 
-        self.logger.info("Requesting session keep alive. Session id: \(session.id)")
+        logger.info("Requesting session keep alive. Session id: \(session.id)")
 
         _ = Task {
-            let jsonData = try self.jsonProcessor.encodeKeepAlive(session: session)
+            let jsonData = try jsonProcessor.encodeKeepAlive(session: session)
 
-            try await self.networkClient.sendRequest(
-                baseURL: self.impressionServer,
+            try await networkClient.sendRequest(
+                baseURL: impressionServer,
                 endpoint: .signal,
                 session: session,
                 body: jsonData
@@ -299,38 +368,38 @@ public final class CausalClient {
     ///
     /// - Warning: This should rarely be used and is primarily intended for debugging.
     public func clearCache() async {
-        self.logger.info("Emptying the feature cache")
-        await self.featureCache.removeAll()
+        logger.info("Emptying the feature cache")
+        await featureCache.removeAll()
     }
 
     /// Begins listening for server sent events.
     public func startSSE() {
-        self.sseClient?.start()
+        sseClient?.start()
     }
 
     /// Ends listening for server sent events.
     public func stopSSE() {
-        self.sseClient?.stop()
+        sseClient?.stop()
     }
 
     // MARK: Private
 
     private func _validateSession() throws -> any SessionProtocol {
-        guard let session = self.session else {
+        guard let session else {
             let error = CausalError.missingSession
-            self.logger.error("CausalClient.shared.session is nil", error: error)
+            logger.error("CausalClient.shared.session is nil", error: error)
             throw error
         }
         return session
     }
 
     private func _clearCacheIfSessionExpiredOrKeepAlive() async {
-        if self.sessionTimer.isExpired {
-            self.logger.info("Session has expired. SessionId: \(self.session?.id ?? "nil")")
-            await self.clearCache()
-            self.sessionTimer.start()
+        if sessionTimer.isExpired {
+            logger.info("Session has expired. SessionId: \(session?.id ?? "nil")")
+            await clearCache()
+            sessionTimer.start()
         } else {
-            self.sessionTimer.keepAlive()
+            sessionTimer.keepAlive()
         }
     }
 
@@ -338,35 +407,35 @@ public final class CausalClient {
         _ updatedSession: any SessionProtocol,
         andSaveFeatures updatedFeatures: [any FeatureProtocol]
     ) async {
-        self.session = updatedSession
+        session = updatedSession
 
         // check expiration and clear cache *before* saving new features
-        await self._clearCacheIfSessionExpiredOrKeepAlive()
-        await self.featureCache.save(all: updatedFeatures)
+        await _clearCacheIfSessionExpiredOrKeepAlive()
+        await featureCache.save(all: updatedFeatures)
 
-        self.logger.info("Saved updated features: \(updatedFeatures)")
+        logger.info("Saved updated features: \(updatedFeatures)")
     }
 
     private func _reinitializeSSEClientIfNeeded() {
-        guard let session = try? self._validateSession() else {
-            self.sseClient?.stop()
-            self.sseClient = nil
+        guard let session = try? _validateSession() else {
+            sseClient?.stop()
+            sseClient = nil
             return
         }
 
-        let isStarted = self.sseClient?.isStarted ?? false
+        let isStarted = sseClient?.isStarted ?? false
 
-        self.sseClient?.stop()
+        sseClient?.stop()
 
-        self.sseClient = self.sseClientFactory.createClient(
-            impressionServer: self.impressionServer,
+        sseClient = sseClientFactory.createClient(
+            impressionServer: impressionServer,
             session: session) { [weak self] message in
                 self?._handleSSE(message: message)
             }
 
         // client was initially running, so restart
         if isStarted {
-            self.sseClient?.start()
+            sseClient?.start()
         }
     }
 
@@ -374,82 +443,16 @@ public final class CausalClient {
         switch message {
         case .flushCache:
             Task {
-                await self.clearCache()
+                await clearCache()
             }
 
         case .flushFeatures(let names):
             Task {
-                await self.featureCache.removeAllWithNames(names)
+                await featureCache.removeAllWithNames(names)
             }
 
         case .hello:
             break
-        }
-    }
-}
-
-// MARK: Convenience API
-
-extension CausalClient {
-    /// An alternative to `requestFeatures()` that is non-throwing and updates features in-place.
-    ///
-    /// Requests a set of features to be updated from the impression server and updates them in-place.
-    ///
-    /// - Parameters:
-    ///   - features: The features to request.
-    ///   - impressionId: The impression id that matches the specific view of the requested features.
-    ///     If no id is provided, one will be generated automatically.
-    ///
-    /// - Returns: A ``CausalError`` or an iOS SDK `Error`, if one occurred.
-    @discardableResult
-    public func updateFeatures(
-        _ features: [any FeatureProtocol],
-        impressionId: ImpressionId = .newId()
-    ) async -> Error? {
-        do {
-            _ = try await self.requestFeatures(features: features, impressionId: impressionId)
-            return nil
-        } catch {
-            self.logger.error("Update features error", error: error)
-            return error
-        }
-    }
-
-    /// Requests a single feature to be updated from the impression server.
-    ///
-    /// - Parameters:
-    ///   - feature: The feature to request.
-    ///   - impressionId: The impression id that matches the specific view of the requested feature.
-    ///                   If no id is provided, one will be generated automatically.
-    ///
-    /// - Returns: The updated feature from the server, or the default feature if there was an error.
-    ///
-    /// - Throws: A ``CausalError`` or an iOS SDK `Error`.
-    public func requestFeature<T: FeatureProtocol>(
-        feature: T,
-        impressionId: ImpressionId = .newId()
-    ) async throws -> T {
-        let result = try await self.requestFeatures(
-            features: [feature],
-            impressionId: impressionId
-        )
-        return (result.first as? T) ?? feature
-    }
-
-    /// An alternative to `signalAndWait()` that is "fire-and-forget" and ignores errors.
-    ///
-    /// Signals that the specified event occurred for an impression.
-    ///
-    /// - Parameters:
-    ///   - event: The event that occurred.
-    ///   - impressionId: The impression id that matches the specific view of the feature, or `nil` for a session event.
-    public func signalEvent(_ event: any EventProtocol, impressionId: ImpressionId?) {
-        Task {
-            do {
-                try await self.signalAndWait(event: event, impressionId: impressionId)
-            } catch {
-                self.logger.error("Signal and wait error", error: error)
-            }
         }
     }
 }
