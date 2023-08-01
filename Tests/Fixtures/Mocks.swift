@@ -101,25 +101,24 @@ final class MockFeature: FeatureProtocol, Equatable {
 
     var isActive = true
 
-    var impressionIds = [ImpressionId]()
+    var impressionId: ImpressionId?
 
     func args() throws -> JSONObject {
         JSONObject()
     }
 
-    func updateFrom(json: JSONObject) { }
+    func outputs() throws -> CausalLabsSDK.JSONObject {
+        JSONObject()
+    }
 
-    func copy(newImpressionId: ImpressionId) -> MockFeature {
-        let copy = MockFeature()
-        copy.isActive = self.isActive
-        copy.impressionIds = [newImpressionId]
-        return copy
+    func update(outputJson: CausalLabsSDK.JSONObject, isActive: Bool) throws {
+
     }
 
     static func == (left: MockFeature, right: MockFeature) -> Bool {
         left.id == right.id
         && left.isActive == right.isActive
-        && left.impressionIds == right.impressionIds
+        && left.impressionId == right.impressionId
     }
 }
 
@@ -136,7 +135,7 @@ struct MockEvent: EventProtocol {
 final class MockFeatureViewModel: FeatureViewModel {
     var stubbedRequestFeature: () -> Void = { }
 
-    func requestFeature() async throws {
+    func requestFeature() async {
         self.stubbedRequestFeature()
     }
 }

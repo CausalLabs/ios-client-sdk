@@ -12,13 +12,19 @@ public struct RequiredOnce<T> {
     private let description: String
     private let resettable: Bool
 
-    /// :nodoc:
+    /// Constructs the `RequiredOnce` property wrapper
+    /// - Parameters:
+    ///   - description: A message to be displayed if the property is accessed/modified incorrectly
+    ///   - resettable: whether or not the property can be modified after the initial setting.
     public init(description: String, resettable: Bool = false) {
         self.description = description
         self.resettable = resettable
     }
 
-    /// :nodoc:
+    /// The `RequiredOnce` wrapped value
+    /// - Note: This will throw a `preconditionFailure` when accessing the property before
+    ///     it is set and when attempting to set an already set property when the `resettable`
+    ///     flag is set to `false`.
     public var wrappedValue: T {
         get {
             guard let value = self.value else {

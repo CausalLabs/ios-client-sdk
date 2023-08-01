@@ -81,8 +81,32 @@ final class SSETests: XCTestCase {
     func test_handleEvent_flushCache() async throws {
         let cache = await FeatureCache()
         let mockFactory = MockSSEClientFactory()
+        let mockNetworkingClient = MockNetworkingClient()
+        mockNetworkingClient.stubbedResponse = """
+        {
+            "session": {
+                "deviceId": "8EB5B974-6BDF-44ED-8D1B-C1215C3B0FA3",
+                "sessionId": "f45f7661-c338-4d24-9f00-1b02c3cf68f7",
+                "startTime": 1687298716527
+            },
+            "impressions": [
+                {
+                    "_impressionId": "response-impression-id"
+                },
+                {
+                    "product": "name",
+                    "productPrice": 10,
+                    "_impressionId": "response-impression-id",
+                    "callToAction": "Different Call To Action",
+                    "actionButton": "Different Action Button"
+                }
+            ]
+        }
+        """
+
         let client = CausalClient.fake(
             featureCache: cache,
+            mockNetworkingClient: mockNetworkingClient,
             mockSSEClientFactory: mockFactory
         )
         let features: [any FeatureProtocol] = [
@@ -108,8 +132,38 @@ final class SSETests: XCTestCase {
     func test_handleEvent_flushFeatures() async throws {
         let cache = await FeatureCache()
         let mockFactory = MockSSEClientFactory()
+        let mockNetworkingClient = MockNetworkingClient()
+        mockNetworkingClient.stubbedResponse = """
+        {
+            "session": {
+                "deviceId": "8EB5B974-6BDF-44ED-8D1B-C1215C3B0FA3",
+                "sessionId": "f45f7661-c338-4d24-9f00-1b02c3cf68f7",
+                "startTime": 1687298716527
+            },
+            "impressions": [
+                {
+                    "_impressionId": "response-impression-id"
+                },
+                {
+                    "product": "name1",
+                    "productPrice": 11,
+                    "_impressionId": "response-impression-id",
+                    "callToAction": "Different Call To Action",
+                    "actionButton": "Different Action Button"
+                },
+                {
+                    "product": "name2",
+                    "productPrice": 22,
+                    "_impressionId": "response-impression-id",
+                    "callToAction": "Different Call To Action",
+                    "actionButton": "Different Action Button"
+                }
+            ]
+        }
+        """
         let client = CausalClient.fake(
             featureCache: cache,
+            mockNetworkingClient: mockNetworkingClient,
             mockSSEClientFactory: mockFactory
         )
         let features: [any FeatureProtocol] = [
