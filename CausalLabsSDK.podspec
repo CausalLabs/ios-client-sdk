@@ -1,6 +1,6 @@
 Pod::Spec.new do |p|
   p.name = 'CausalLabsSDK'
-  p.version = '0.8.0'
+  p.version = '0.9.0'
 
   p.summary = 'iOS SDK for Causal Labs'
   p.description = 'The Causal Labs iOS SDK integrates Causal with native iOS apps.'

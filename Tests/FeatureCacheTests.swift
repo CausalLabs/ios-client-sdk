@@ -8,7 +8,7 @@ import XCTest
 @MainActor
 final class FeatureCacheTests: XCTestCase {
 
-    func test_save_fetchSingle() {
+    func test_save_fetchSingle() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
         XCTAssertEqual(cache.count, 0)
@@ -16,18 +16,18 @@ final class FeatureCacheTests: XCTestCase {
         let feature1 = MockFeature()
         let feature2 = RatingBox(productName: "name", productPrice: 0)
 
-        cache.save(all: [feature1, feature2])
+        try cache.save(all: [feature1, feature2])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 2)
 
         let fetched1 = cache.fetch(feature1)
-        XCTAssertEqual(fetched1 as? MockFeature, feature1)
+        XCTAssertTrue(try feature1.isEqual(to: fetched1))
 
         let fetched2 = cache.fetch(feature2)
-        XCTAssertEqual(fetched2 as? RatingBox, feature2)
+        XCTAssertTrue(try feature2.isEqual(to: fetched2))
     }
 
-    func test_save_fetchMultiple() {
+    func test_save_fetchMultiple() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
         XCTAssertEqual(cache.count, 0)
@@ -38,23 +38,23 @@ final class FeatureCacheTests: XCTestCase {
         var fetched = cache.fetch(all: [feature1, feature2])
         XCTAssertTrue(fetched.isEmpty, "No features should be returned when cache is empty")
 
-        cache.save(all: [feature1, feature2])
+        try cache.save(all: [feature1, feature2])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 2)
 
         fetched = cache.fetch(all: [feature1, feature2])
-        XCTAssertEqual(fetched[0] as? MockFeature, feature1)
-        XCTAssertEqual(fetched[1] as? RatingBox, feature2)
+        XCTAssertTrue(try feature1.isEqual(to: fetched[0]))
+        XCTAssertTrue(try feature2.isEqual(to: fetched[1]))
     }
 
-    func test_remove() {
+    func test_remove() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
         let feature1 = MockFeature()
         let feature2 = RatingBox(productName: "name", productPrice: 0)
 
-        cache.save(all: [feature1, feature2])
+        try cache.save(all: [feature1, feature2])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 2)
 
@@ -64,17 +64,17 @@ final class FeatureCacheTests: XCTestCase {
 
         let fetched = cache.fetch(all: [feature1, feature2])
         XCTAssertEqual(fetched.count, 1)
-        XCTAssertEqual(fetched[0] as? RatingBox, feature2)
+        XCTAssertTrue(try feature2.isEqual(to: fetched[0]))
     }
 
-    func test_removeAll() {
+    func test_removeAll() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
         let feature1 = MockFeature()
         let feature2 = RatingBox(productName: "name", productPrice: 0)
 
-        cache.save(all: [feature1, feature2])
+        try cache.save(all: [feature1, feature2])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 2)
 
@@ -83,14 +83,14 @@ final class FeatureCacheTests: XCTestCase {
         XCTAssertEqual(cache.count, 0)
     }
 
-    func test_remove_withSameName() {
+    func test_remove_withSameName() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
         let feature1 = RatingBox(productName: "first", productPrice: 1)
         let feature2 = RatingBox(productName: "second", productPrice: 2)
 
-        cache.save(all: [feature1, feature2])
+        try cache.save(all: [feature1, feature2])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 2)
 
@@ -100,7 +100,7 @@ final class FeatureCacheTests: XCTestCase {
         XCTAssertTrue(cache.contains(feature2))
     }
 
-    func test_removeAllWithNames_OneFeature() {
+    func test_removeAllWithNames_OneFeature() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
@@ -108,7 +108,7 @@ final class FeatureCacheTests: XCTestCase {
         let feature2 = RatingBox(productName: "second", productPrice: 2)
         let feature3 = MockFeature()
 
-        cache.save(all: [feature1, feature2, feature3])
+        try cache.save(all: [feature1, feature2, feature3])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 3)
 
@@ -118,9 +118,10 @@ final class FeatureCacheTests: XCTestCase {
 
         XCTAssertFalse(cache.contains(feature1))
         XCTAssertFalse(cache.contains(feature2))
+        XCTAssertTrue(cache.contains(feature3))
     }
 
-    func test_removeAllWithNames_MultipleFeatures() {
+    func test_removeAllWithNames_MultipleFeatures() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
@@ -129,60 +130,52 @@ final class FeatureCacheTests: XCTestCase {
         let feature3 = MockFeature()
         let feature4 = ProductInfo()
 
-        cache.save(all: [feature1, feature2, feature3, feature4])
+        try cache.save(all: [feature1, feature2, feature3, feature4])
         XCTAssertFalse(cache.isEmpty)
         XCTAssertEqual(cache.count, 4)
 
         cache.removeAllWithNames([feature1.name, feature2.name, feature3.name])
         XCTAssertEqual(cache.count, 1)
-        XCTAssertTrue(cache.contains(feature4))
 
         XCTAssertFalse(cache.contains(feature1))
         XCTAssertFalse(cache.contains(feature2))
         XCTAssertFalse(cache.contains(feature3))
+        XCTAssertTrue(cache.contains(feature4))
     }
 
-    func test_contains() {
+    func test_contains() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
         let feature1 = MockFeature()
         let feature2 = RatingBox(productName: "name", productPrice: 0)
-        cache.save(feature1)
+        try cache.save(feature1)
 
         XCTAssertTrue(cache.contains(feature1))
         XCTAssertFalse(cache.contains(feature2))
     }
 
-    func test_contains_SameFeatureDifferentArgs() {
+    func test_contains_SameFeatureDifferentArgs() throws {
         let cache = FeatureCache()
         XCTAssertTrue(cache.isEmpty)
 
         let feature1 = RatingBox(productName: "first", productPrice: 1)
         let feature2 = RatingBox(productName: "second", productPrice: 2)
-        cache.save(feature1)
+        try cache.save(feature1)
 
         XCTAssertTrue(cache.contains(feature1))
         XCTAssertFalse(cache.contains(feature2))
     }
+}
 
-    func test_filtered() {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+private extension FeatureProtocol {
+    func isEqual(to cacheItem: FeatureCache.CacheItem?) throws -> Bool {
+        guard let cacheItem else { return false }
+        let outputs = try outputs()
 
-        let feature0 = MockFeature()
-        let feature1 = RatingBox(productName: "first", productPrice: 1)
-        let feature2 = RatingBox(productName: "second", productPrice: 2)
-        let feature3 = RatingBox(productName: "third", productPrice: 3)
-        cache.save(all: [feature0, feature1])
-
-        let all = [feature0, feature1, feature2, feature3] as [any FeatureProtocol]
-
-        let filtered = cache.filter(notIncluded: all)
-        XCTAssertEqual(filtered.count, 2)
-
-        let filteredIds = filtered.map { $0.id }
-        XCTAssertTrue(filteredIds.contains(feature2.id))
-        XCTAssertTrue(filteredIds.contains(feature3.id))
+        return cacheItem.name == name &&
+        cacheItem.isActive == isActive &&
+        cacheItem.outputs == outputs &&
+        cacheItem.impressionId == impressionId
     }
 }
