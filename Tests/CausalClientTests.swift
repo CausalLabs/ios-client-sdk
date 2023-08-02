@@ -6,6 +6,7 @@
 @testable import CausalLabsSDK
 import XCTest
 
+// swiftlint:disable:next type_body_length
 final class CausalClientTests: XCTestCase {
     func test_impressionServer() {
         CausalClient.shared.impressionServer = fakeImpressionServer
@@ -381,8 +382,8 @@ final class CausalClientTests: XCTestCase {
             isActive: false
         )
 
-        cache.save(cachedFeature1)
-        cache.save(cachedFeature2)
+        try cache.save(cachedFeature1)
+        try cache.save(cachedFeature2)
 
         let requestImpressionId = "request impression id"
         await client.requestFeatures(features, impressionId: requestImpressionId)
@@ -464,7 +465,7 @@ final class CausalClientTests: XCTestCase {
             isActive: false
         )
 
-        cache.save(cachedFeature)
+        try cache.save(cachedFeature)
 
         let requestImpressionId = "request impression id"
         await client.requestFeature(feature, impressionId: requestImpressionId)

@@ -52,7 +52,7 @@ struct JSONProcessor {
     }
 
     func encodeSignalCachedFeatures(
-        features: [any FeatureProtocol],
+        cachedItems: [FeatureCache.CacheItem],
         session: any SessionProtocol,
         impressionId: ImpressionId
     ) throws -> Data {
@@ -60,12 +60,12 @@ struct JSONProcessor {
         json["id"] = try session.keys()
 
         var featureImpressionJSON = JSONObject()
-        features.forEach {
+        cachedItems.forEach { item in
             var impressionJSON = ["newImpression": impressionId]
-            if let oldImpression = $0.impressionId {
+            if let oldImpression = item.impressionId {
                 impressionJSON["impression"] = oldImpression
             }
-            featureImpressionJSON[$0.name] = impressionJSON
+            featureImpressionJSON[item.name] = impressionJSON
         }
         json["impressions"] = featureImpressionJSON
         return try json.data()

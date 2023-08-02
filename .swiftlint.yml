@@ -32,7 +32,6 @@ opt_in_rules:
   - for_where
   - function_default_parameter_at_end
   - legacy_random
-  - no_extension_access_modifier
   - redundant_type_annotation
   - static_operator
   - toggle_bool
@@ -105,4 +104,4 @@ nesting:
   always_allow_one_type_in_functions: false
 
 identifier_name:
-  allowed_symbols: ['_']
+  allowed_symbols: ["_"]

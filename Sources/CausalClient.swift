@@ -133,7 +133,7 @@ public final class CausalClient {
                // ensure we fetched all requested features from the cache
                cachedFeatures.count == features.count {
 
-                _ = Task {
+                let signalTask = Task {
                     try await _signalCachedFeatures(
                         cachedFeatures,
                         session: session,
@@ -148,13 +148,16 @@ public final class CausalClient {
                 do {
                     for (index, cachedFeature) in cachedFeatures.enumerated() {
                         let inputFeature = features[index]
-                        let outputJson = try cachedFeature.outputs()
-                        try inputFeature.update(outputJson: outputJson, isActive: cachedFeature.isActive)
+                        try inputFeature.update(
+                            outputJson: cachedFeature.outputs,
+                            isActive: cachedFeature.isActive
+                        )
                         inputFeature.impressionId = impressionId
                     }
+                    try await signalTask.value
                     return nil
                 } catch {
-                    logger.error("Update features error", error: error)
+                    logger.error("requestFeatures error", error: error)
                     return error
                 }
             }
@@ -181,16 +184,14 @@ public final class CausalClient {
                 impressionId: impressionId
             )
 
-            await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
-
-            return updatedFeatures
+            try await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
         }
 
         do {
-            _ = try await task.result.get()
+            try await task.value
             return nil
         } catch {
-            logger.error("Update features error", error: error)
+            logger.error("requestFeatures error", error: error)
             return error
         }
     }
@@ -253,7 +254,7 @@ public final class CausalClient {
                 impressionId: nil
             )
 
-            await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
+            try await _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
         }
 
         try await task.result.get()
@@ -315,19 +316,19 @@ public final class CausalClient {
 
     /// Signals a feature impression when reading features from the cache.
     private func _signalCachedFeatures(
-        _ features: [any FeatureProtocol],
+        _ cachedItems: [FeatureCache.CacheItem],
         session: any SessionProtocol,
         impressionId: ImpressionId
     ) async throws {
         logger.info("""
         Signaling cached features...
-        Features: \(features.map { $0.name })
+        Features: \(cachedItems.map { $0.name })
         Impression id: \(impressionId)
         """)
 
         let task = Task {
             let jsonData = try jsonProcessor.encodeSignalCachedFeatures(
-                features: features,
+                cachedItems: cachedItems,
                 session: session,
                 impressionId: impressionId
             )
@@ -406,12 +407,12 @@ public final class CausalClient {
     private func _updateSession(
         _ updatedSession: any SessionProtocol,
         andSaveFeatures updatedFeatures: [any FeatureProtocol]
-    ) async {
+    ) async throws {
         session = updatedSession
 
         // check expiration and clear cache *before* saving new features
         await _clearCacheIfSessionExpiredOrKeepAlive()
-        await featureCache.save(all: updatedFeatures)
+        try await featureCache.save(all: updatedFeatures)
 
         logger.info("Saved updated features: \(updatedFeatures)")
     }

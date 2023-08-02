@@ -114,7 +114,14 @@ final class JSONProcessorTests: XCTestCase {
         ratingBox.impressionId = "old-impression-id"
 
         let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(
-            features: [ratingBox],
+            cachedItems: [
+                FeatureCache.CacheItem(
+                    name: ratingBox.name,
+                    impressionId: ratingBox.impressionId,
+                    isActive: ratingBox.isActive,
+                    outputs: try ratingBox.outputs()
+                )
+            ],
             session: session,
             impressionId: fakeImpressionId
         )

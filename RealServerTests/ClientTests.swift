@@ -16,6 +16,25 @@ final class RealServerTests: XCTestCase {
         XCTAssertFalse(httpResponse.isError)
     }
 
+    func testCache() async throws {
+        let cache = await FeatureCache()
+        let client = CausalClient(featureCache: cache)
+        client.impressionServer = URL(string: "http://localhost:3004/iserver")!
+        let session = Session(deviceId: "testCache", userId: "abc", required: 1)
+        client.session = session
+        client.debugLogging = .verbose
+
+        let feature = RatingBox(productName: "name", productPrice: 3.0)
+
+        for _ in 0..<10 {
+            await client.clearCache()
+            let result1 = await client.requestFeature(feature)
+            let result2 = await client.requestFeature(feature)
+            XCTAssertNil(result1)
+            XCTAssertNil(result2)
+        }
+    }
+
     @MainActor
     func testCacheFill() async throws {
         let cache = FeatureCache()
