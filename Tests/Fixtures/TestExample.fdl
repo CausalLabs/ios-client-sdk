@@ -72,10 +72,10 @@ feature ProductDisplay {
 
 event ProductClick
 {
-    productid : String!
+    productId : String!
 }
 
-event GlobalNoParamEvt {}
+event GlobalNoParamEvent {}
 
 feature EmptyFeature {}
 

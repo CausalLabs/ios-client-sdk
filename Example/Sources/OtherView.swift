@@ -6,14 +6,14 @@ import Foundation
 import SwiftUI
 
 struct OtherView: View {
-    @State var isPresenting = false
+    @State private var isPresenting = false
 
-    @State var push = false
+    @State private var push = false
 
-    @State var modal = false
+    @State private var modal = false
 
     @Environment(\.dismiss)
-    var dismiss
+    private var dismiss
 
     var body: some View {
         NavigationStack {

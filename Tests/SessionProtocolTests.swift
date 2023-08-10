@@ -43,7 +43,6 @@ final class SessionProtocolTests: XCTestCase {
     }
 
     func test_updateFromJSON() throws {
-        // TODO: add some outputs to the session
         var session = Session(deviceId: fakeDeviceId, required: 0)
 
         // Empty JSON should leave default values set

@@ -26,7 +26,7 @@ struct JSONProcessor {
         json["reqs"] = try features.map {
             var each = JSONObject()
             each[Self._nameKeyOrderedFirst] = $0.name
-            each["args"] = try $0.args()
+            each["args"] = try encodeObject($0.args)
             return each
         }
 
@@ -97,6 +97,12 @@ struct JSONProcessor {
         return data
     }
 
+    private func encodeObject<T: Encodable>(_ object: T) throws -> JSONObject {
+        let data = try JSONEncoder().encode(object)
+        let jsonObject = try JSONSerialization.jsonObject(with: data) as? JSONObject
+        return jsonObject ?? [:]
+    }
+
     func decode(data: Data) throws -> JSONObject {
         do {
             let json = try JSONSerialization.jsonObject(
@@ -139,18 +145,13 @@ struct JSONProcessor {
             let eachFeature = updatedFeatures[index]
 
             if let impressionString = eachImpression as? String, impressionString == "OFF" {
-                eachFeature.isActive = false
+                try eachFeature.update(request: .off)
             } else if let impressionJSON = eachImpression as? JSONObject {
-                try eachFeature.update(outputJson: impressionJSON, isActive: true)
-
                 // If an impression id is supplied then we should overwrite the feature
                 // outputs _impressionId with that value. If we do not have an impression
                 // id then this is being called as part of a cache fill and we should
                 // retain the _impressionId data that is returned from the server.
-                if impressionId != nil {
-                    eachFeature.impressionId = impressionId
-                }
-
+                try eachFeature.update(request: .on(outputJson: impressionJSON, impressionId: impressionId))
             } else {
                 throw CausalError.parseFailure(message: "Received unknown impression data: \(eachImpression)")
             }
@@ -163,5 +164,17 @@ struct JSONProcessor {
 extension JSONObject {
     func data() throws -> Data {
         try JSONSerialization.data(withJSONObject: self, options: [.sortedKeys, .prettyPrinted])
+    }
+}
+
+private extension FeatureCache.CacheItem {
+    var impressionId: ImpressionId? {
+        switch status {
+        case let .on(_, impressionId):
+            return impressionId
+
+        case .off:
+            return nil
+        }
     }
 }

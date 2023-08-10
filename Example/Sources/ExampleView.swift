@@ -7,47 +7,73 @@ import Foundation
 import SwiftUI
 
 struct ExampleView: View {
-    @StateObject var viewModel = RatingBoxViewModel(product: "my product")
+    @StateObject private var viewModel = RatingBoxViewModel(product: "my product")
 
     // MARK: Event inputs
 
-    @State var stars: Int = 0
+    @State private var stars: Int = 0
 
     var body: some View {
+        VStack {
+            contentView
+                .toolbar(.visible, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem {
+                        Button("Clear Cache") {
+                            CausalClient.shared.clearCache()
+                        }
+                    }
+                }
+                .padding()
+                .requestFeature(viewModel)
+        }
+
+    }
+
+    @ViewBuilder private var contentView: some View {
+        switch viewModel.state {
+        case .loading:
+            loadingView
+
+        case let .on(outputs):
+            loadedView(outputs: outputs)
+
+        case .off:
+            offView
+        }
+    }
+
+    private var loadingView: some View {
+        Text("Loading Feature")
+    }
+
+    private var offView: some View {
+        Text("Feature is OFF")
+    }
+
+    private func loadedView(outputs: RatingBox.Outputs) -> some View {
         VStack(spacing: 16) {
-            Text(self.viewModel.feature?.callToAction ?? "")
+            Text(outputs.callToAction)
 
             HStack {
-                ForEach(1..<6) { stars in
+                ForEach(1..<6) { rating in
                     Button {
-                        self.stars = stars
+                        stars = rating
                     } label: {
                         Image(systemName: "star.fill")
                             .font(.largeTitle)
-                            .foregroundColor(stars <= self.stars ? .accentColor : .secondary)
+                            .foregroundColor(rating <= stars ? .accentColor : .secondary)
                     }
                 }
             }
 
             Button {
-                self.viewModel.signalRating(stars: self.stars)
+                viewModel.signal(event: .rating(stars: stars))
             } label: {
-                Text(self.viewModel.feature?.actionButton ?? "")
+                Text(outputs.actionButton)
             }
             .buttonStyle(.bordered)
             .padding()
         }
-        .toolbar(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem {
-                Button("Clear Cache") {
-                    Task {
-                        await CausalClient.shared.clearCache()
-                    }
-                }
-            }
-        }
-        .padding()
-        .requestFeature(self.viewModel)
     }
 }

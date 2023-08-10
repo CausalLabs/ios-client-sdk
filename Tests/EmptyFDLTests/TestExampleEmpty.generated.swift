@@ -113,6 +113,35 @@ extension Session {
 
 // MARK: Session Events
 
+extension Session {
+    /// Details all possible session events
+    enum Event: SessionEventProvider {
+
+        var eventDetails: any SessionEvent {
+            switch self {
+            }
+        }
+    }
+}
+
+extension CausalClientProtocol {
+    /// Signal a session event occurred to the impression service.
+    ///
+    /// An alternative to `signalAndWait(sessionEvent:)` that is "fire-and-forget" and ignores errors.
+    ///
+    /// - Parameter sessionEvent: The session event that occurred.    
+    func signal(sessionEvent: Session.Event) {
+        signal(sessionEvent: sessionEvent.eventDetails)
+    }
+
+    /// Signal a session event occurred to the impression service.
+    ///
+    /// - Parameter sessionEvent: The session event that occurred.
+    func signalAndWait(sessionEvent: Session.Event) async throws {
+        try await signalAndWait(sessionEvent: sessionEvent.eventDetails)
+    }    
+}
+
 
 
 // swiftformat:enable all

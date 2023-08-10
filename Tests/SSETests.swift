@@ -22,7 +22,7 @@ final class SSETests: XCTestCase {
         XCTAssertNil(mockFactory.client)
 
         let client = CausalClient.fake(
-            featureCache: await FeatureCache(),
+            featureCache: FeatureCache(),
             session: session,
             mockSSEClientFactory: mockFactory
         )
@@ -57,7 +57,7 @@ final class SSETests: XCTestCase {
         }
 
         let client = CausalClient.fake(
-            featureCache: await FeatureCache(),
+            featureCache: FeatureCache(),
             mockSSEClientFactory: mockFactory
         )
         XCTAssertNotNil(mockFactory.client, "client should get initialized when setting session")
@@ -79,7 +79,7 @@ final class SSETests: XCTestCase {
     }
 
     func test_handleEvent_flushCache() async throws {
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let mockFactory = MockSSEClientFactory()
         let mockNetworkingClient = MockNetworkingClient()
         mockNetworkingClient.stubbedResponse = """
@@ -110,11 +110,11 @@ final class SSETests: XCTestCase {
             mockSSEClientFactory: mockFactory
         )
         let features: [any FeatureProtocol] = [
-            MockFeature(),
+            ProductInfo(),
             RatingBox(productName: "name", productPrice: 10)
         ]
         try await client.requestCacheFill(features: features)
-        let count = await cache.count
+        let count = cache.count
         XCTAssertEqual(count, 2)
 
         client.startSSE()
@@ -125,12 +125,12 @@ final class SSETests: XCTestCase {
         // the message handler clears the cache async, so we can't await
         // sleep to let call complete
         sleep(2)
-        let isEmpty = await cache.isEmpty
+        let isEmpty = cache.isEmpty
         XCTAssertTrue(isEmpty)
     }
 
     func test_handleEvent_flushFeatures() async throws {
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let mockFactory = MockSSEClientFactory()
         let mockNetworkingClient = MockNetworkingClient()
         mockNetworkingClient.stubbedResponse = """
@@ -167,13 +167,12 @@ final class SSETests: XCTestCase {
             mockSSEClientFactory: mockFactory
         )
         let features: [any FeatureProtocol] = [
-            MockFeature(),
+            ProductInfo(),
             RatingBox(productName: "name1", productPrice: 11),
             RatingBox(productName: "name2", productPrice: 22)
         ]
         try await client.requestCacheFill(features: features)
-        let initialCount = await cache.count
-        XCTAssertEqual(initialCount, 3)
+        XCTAssertEqual(cache.count, 3)
 
         client.startSSE()
         let messageHandler = try XCTUnwrap(mockFactory.client?.receivedMessageHandler)
@@ -183,7 +182,6 @@ final class SSETests: XCTestCase {
         // the message handler clears the cache async, so we can't await
         // sleep to let call complete
         sleep(2)
-        let count = await cache.count
-        XCTAssertEqual(count, 1)
+        XCTAssertEqual(cache.count, 1)
     }
 }
