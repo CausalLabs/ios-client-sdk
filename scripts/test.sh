@@ -33,6 +33,9 @@ if [ -n "${CAUSAL_EMAIL:-}" ]; then
         -project CausalLabsSDK.xcodeproj \
         -scheme RealServerTests \
         -destination "$DEST" | xcpretty
+
+    # shutdown servers
+    ../../regression/kill-all.sh
 fi
 
 echo "All iOS tests passed!"

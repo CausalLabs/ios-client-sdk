@@ -13,7 +13,7 @@ let fakeDeviceId = String.newId()
 
 extension CausalClient {
     static func fake(
-        featureCache: FeatureCache,
+        featureCache: FeatureCache = FeatureCache(),
         mockNetworkingClient: MockNetworkingClient = MockNetworkingClient(),
         sessionTimer: SessionTimer = SessionTimer(),
         session: any SessionProtocol = MockSession(),

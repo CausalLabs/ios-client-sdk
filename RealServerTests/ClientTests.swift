@@ -17,7 +17,7 @@ final class RealServerTests: XCTestCase {
     }
 
     func testCache() async throws {
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let client = CausalClient(featureCache: cache)
         client.impressionServer = URL(string: "http://localhost:3004/iserver")!
         let session = Session(deviceId: "testCache", userId: "abc", required: 1)
@@ -27,7 +27,7 @@ final class RealServerTests: XCTestCase {
         let feature = RatingBox(productName: "name", productPrice: 3.0)
 
         for _ in 0..<10 {
-            await client.clearCache()
+            client.clearCache()
             let result1 = await client.requestFeature(feature)
             let result2 = await client.requestFeature(feature)
             XCTAssertNil(result1)
@@ -35,7 +35,6 @@ final class RealServerTests: XCTestCase {
         }
     }
 
-    @MainActor
     func testCacheFill() async throws {
         let cache = FeatureCache()
         let client = CausalClient(featureCache: cache)
@@ -53,18 +52,21 @@ final class RealServerTests: XCTestCase {
         XCTAssertEqual(cache.count, 2)
         XCTAssertTrue(cache.contains(feature1))
         XCTAssertTrue(cache.contains(feature2))
-
-        // If the payload was successfully processed and hydrated then each
-        // requested feature should hydrate the impression ids.
-        XCTAssertNotNil(feature1.impressionId)
-        XCTAssertNotNil(feature2.impressionId)
+        XCTAssertEqual(feature1.status, .unrequested)
+        XCTAssertEqual(feature2.status, .unrequested)
 
         // Pulling the features out of the cache should update the feature instances
         // with the new impressionId
         let newImpressionId = "testCacheFill - impression id"
-        await client.requestFeatures([feature1, feature2], impressionId: newImpressionId)
-        XCTAssertEqual(feature1.impressionId, newImpressionId)
-        XCTAssertEqual(feature2.impressionId, newImpressionId)
+        let requestResult = await client.requestFeatures([feature1, feature2], impressionId: newImpressionId)
+        XCTAssertNil(requestResult)
+        guard case let .on(outputs1) = feature1.status,
+              case let .on(outputs2) = feature2.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+        XCTAssertEqual(outputs1._impressionId, newImpressionId)
+        XCTAssertEqual(outputs2._impressionId, newImpressionId)
     }
 
     func testSessionEvent() async throws {
@@ -75,7 +77,7 @@ final class RealServerTests: XCTestCase {
         // need to construct a session before sending session events
         await CausalClient.shared.requestFeatures([])
 
-        try await session.signalAndWaitAddToCart(productid: "123")
+        try await CausalClient.shared.signalAndWait(sessionEvent: .addToCart(productid: "123"))
     }
 
     func testImpressionIdFromCachedFeature() async throws {
@@ -89,12 +91,24 @@ final class RealServerTests: XCTestCase {
         let id2 = "testImpressionIdFromCachedFeature - id2"
 
         await CausalClient.shared.requestFeature(feature1, impressionId: id1)
-        XCTAssertEqual(feature1.impressionId, id1)
+
+        guard case let .on(outputs) = feature1.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, id1)
+
         await CausalClient.shared.requestFeature(feature1, impressionId: id2)
-        XCTAssertEqual(feature1.impressionId, id2)
+
+        guard case let .on(outputs) = feature1.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, id2)
     }
 
-    @MainActor
     func test_requestFeatures_SHOULD_updateImpressionIdsWhenCalledMultipleTimes() async throws {
         let cache = FeatureCache()
         let client = CausalClient(featureCache: cache)
@@ -109,14 +123,22 @@ final class RealServerTests: XCTestCase {
         let id2 = "test_requestFeatures_SHOULD_updateImpressionIdsWhenCalledMultipleTimes - id2"
 
         await client.requestFeatures([feature1, feature2], impressionId: id1)
-
-        XCTAssertEqual(feature1.impressionId, id1)
-        XCTAssertEqual(feature2.impressionId, id1)
+        guard case let .on(outputs1) = feature1.status,
+              case let .on(outputs2) = feature2.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+        XCTAssertEqual(outputs1._impressionId, id1)
+        XCTAssertEqual(outputs2._impressionId, id1)
 
         await client.requestFeatures([feature1, feature2], impressionId: id2)
-
-        XCTAssertEqual(feature1.impressionId, id2)
-        XCTAssertEqual(feature2.impressionId, id2)
+        guard case let .on(outputs1) = feature1.status,
+              case let .on(outputs2) = feature2.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+        XCTAssertEqual(outputs1._impressionId, id2)
+        XCTAssertEqual(outputs2._impressionId, id2)
     }
 
     func testComplexFeature() async throws {
@@ -138,49 +160,84 @@ final class RealServerTests: XCTestCase {
         await CausalClient.shared.requestFeatures(featuresIn, impressionId: id)
 
         // Test args are still what we specified
-        XCTAssertEqual(test.obj1, obj1In)
-        XCTAssertEqual(test.float1, float1In)
-        XCTAssertEqual(test.enum1, enum1In)
-        XCTAssertEqual(test.string1, string1In)
-        XCTAssertEqual(test.int1, int1In)
+        XCTAssertEqual(test.args.obj1, obj1In)
+        XCTAssertEqual(test.args.float1, float1In)
+        XCTAssertEqual(test.args.enum1, enum1In)
+        XCTAssertEqual(test.args.string1, string1In)
+        XCTAssertEqual(test.args.int1, int1In)
 
-        XCTAssertNil(test.obj2)
-        XCTAssertNotNil(test.obj3)
-        XCTAssertEqual(test.obj3?.float1, 2.0)
-        XCTAssertEqual(test.obj3?.enum1, Color.SECONDARY)
-        XCTAssertEqual(test.obj3?.string1, "FOO")
-        XCTAssertEqual(test.obj3?.int1, 4)
-        XCTAssertNil(test.obj3?.int2)
-        XCTAssertEqual(test.obj3?.nested1.float1, 3.0)
-        XCTAssertEqual(test.obj3?.nested1.int1, 7)
+        XCTAssertNil(test.args.obj2)
+        XCTAssertNotNil(test.args.obj3)
+        XCTAssertEqual(test.args.obj3?.float1, 2.0)
+        XCTAssertEqual(test.args.obj3?.enum1, Color.SECONDARY)
+        XCTAssertEqual(test.args.obj3?.string1, "FOO")
+        XCTAssertEqual(test.args.obj3?.int1, 4)
+        XCTAssertNil(test.args.obj3?.int2)
+        XCTAssertEqual(test.args.obj3?.nested1.float1, 3.0)
+        XCTAssertEqual(test.args.obj3?.nested1.int1, 7)
 
         // Test all outputs
-        XCTAssertEqual(test.obj1Out.float1, 1.0)
-        XCTAssertEqual(test.obj1Out.enum1, Color.PRIMARY)
-        XCTAssertEqual(test.obj1Out.string1, "ABC")
-        XCTAssertEqual(test.obj1Out.int1, 1)
-        XCTAssertNil(test.obj1Out.int2)
-        XCTAssertEqual(test.obj1Out.nested1.float1, 11.0)
-        XCTAssertEqual(test.obj1Out.nested1.int1, -1)
-        XCTAssertNil(test.obj2Out)
-        XCTAssertEqual(test.float1Out, 1.0)
-        XCTAssertNil(test.float2Out)
-        XCTAssertEqual(test.enum1Out, Color.PRIMARY)
-        XCTAssertNil(test.enum2Out)
-        XCTAssertEqual(test.string1Out, "")
-        XCTAssertNil(test.string2Out)
-        XCTAssertEqual(test.int1Out, 0)
-        XCTAssertNil(test.int2Out)
+        guard case let .on(outputs) = test.status else {
+            XCTFail("Expected `on` status.")
+            return
+
+        }
+        XCTAssertEqual(outputs.obj1Out.float1, 1.0)
+        XCTAssertEqual(outputs.obj1Out.enum1, Color.PRIMARY)
+        XCTAssertEqual(outputs.obj1Out.string1, "ABC")
+        XCTAssertEqual(outputs.obj1Out.int1, 1)
+        XCTAssertNil(outputs.obj1Out.int2)
+        XCTAssertEqual(outputs.obj1Out.nested1.float1, 11.0)
+        XCTAssertEqual(outputs.obj1Out.nested1.int1, -1)
+        XCTAssertNil(outputs.obj2Out)
+        XCTAssertEqual(outputs.float1Out, 1.0)
+        XCTAssertNil(outputs.float2Out)
+        XCTAssertEqual(outputs.enum1Out, Color.PRIMARY)
+        XCTAssertNil(outputs.enum2Out)
+        XCTAssertEqual(outputs.string1Out, "")
+        XCTAssertNil(outputs.string2Out)
+        XCTAssertEqual(outputs.int1Out, 0)
+        XCTAssertNil(outputs.int2Out)
 
         // Test the impression id was set correctly
-        XCTAssertEqual(test.impressionId, id)
+        XCTAssertEqual(outputs._impressionId, id)
 
         var objForSignal = obj1In
         objForSignal.float1 = 12
 
-        test.signalClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
+        CausalClient.shared.signal(
+            featureEvent: test.event(
+                .click(
+                    obj1: objForSignal,
+                    obj2: objForSignal,
+                    float1: 1.0,
+                    float2: 2.0,
+                    enum1: Color.SECONDARY,
+                    enum2: nil,
+                    string1: "test",
+                    string2: nil,
+                    int1: 31,
+                    int2: nil
+                )
+            )
+        )
 
-        try await test.signalAndWaitClick(obj1: objForSignal, obj2: objForSignal, float1: 1.0, float2: 2.0, enum1: Color.SECONDARY, enum2: nil, string1: "test", string2: nil, int1: 31, int2: nil)
+        try await CausalClient.shared.signalAndWait(
+            featureEvent: test.event(
+                .click(
+                    obj1: objForSignal,
+                    obj2: objForSignal,
+                    float1: 1.0,
+                    float2: 2.0,
+                    enum1: Color.SECONDARY,
+                    enum2: nil,
+                    string1: "test",
+                    string2: nil,
+                    int1: 31,
+                    int2: nil
+                )
+            )
+        )
 
         // call again, make sure signal impression goes through
         _ = await CausalClient.shared.requestFeatures(featuresIn)

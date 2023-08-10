@@ -5,177 +5,310 @@
 @testable import CausalLabsSDK
 import XCTest
 
-@MainActor
 final class FeatureCacheTests: XCTestCase {
+    private var sut: FeatureCache!
 
-    func test_save_fetchSingle() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
-        XCTAssertEqual(cache.count, 0)
-
-        let feature1 = MockFeature()
-        let feature2 = RatingBox(productName: "name", productPrice: 0)
-
-        try cache.save(all: [feature1, feature2])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 2)
-
-        let fetched1 = cache.fetch(feature1)
-        XCTAssertTrue(try feature1.isEqual(to: fetched1))
-
-        let fetched2 = cache.fetch(feature2)
-        XCTAssertTrue(try feature2.isEqual(to: fetched2))
+    override func setUp() async throws {
+        sut = FeatureCache()
+        try await super.setUp()
     }
 
-    func test_save_fetchMultiple() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
-        XCTAssertEqual(cache.count, 0)
+    override func tearDown() async throws {
+        sut = nil
+        try await super.tearDown()
+    }
 
-        let feature1 = MockFeature()
-        let feature2 = RatingBox(productName: "name", productPrice: 0)
+    // MARK: init
 
-        var fetched = cache.fetch(all: [feature1, feature2])
-        XCTAssertTrue(fetched.isEmpty, "No features should be returned when cache is empty")
+    func test_init_SHOULD_defaultToEmptyCache() {
+        XCTAssertTrue(sut.isEmpty)
+        XCTAssertEqual(sut.count, 0)
+    }
 
-        try cache.save(all: [feature1, feature2])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 2)
+    // MARK: save(feature:) & fetch(feature:)
 
-        fetched = cache.fetch(all: [feature1, feature2])
+    func test_save_SHOULD_saveActiveFeature() throws {
+        let feature = MockFeatureA(arg1: "on feature")
+        feature.status = .on(outputs: .init(_impressionId: "impression_id", out1: "out1", out2: 2))
+
+        try sut.save(feature)
+        XCTAssertEqual(sut.count, 1)
+
+        let fetched = sut.fetch(feature)
+        XCTAssertTrue(try feature.isEqual(to: fetched))
+    }
+
+    func test_save_SHOULD_saveInactiveFeature() throws {
+        let feature = MockFeatureA(arg1: "off feature")
+        feature.status = .off
+
+        try sut.save(feature)
+        XCTAssertEqual(sut.count, 1)
+
+        let fetched1 = sut.fetch(feature)
+        XCTAssertTrue(try feature.isEqual(to: fetched1))
+    }
+
+    func test_save_SHOULD_throwWhenSavingActiveFeatureWithoutImpressionId() throws {
+        let feature = MockFeatureA(arg1: "on feature - nil impression id")
+        feature.status = .on(outputs: .init(_impressionId: nil, out1: "out1", out2: 2))
+
+        XCTAssertThrowsError(try sut.save(feature)) { error in
+            XCTAssertEqual(error as? FeatureCache.FeatureCacheError, .invalidFeature)
+        }
+        XCTAssertTrue(sut.isEmpty)
+    }
+
+    func test_save_SHOULD_throwWhenSavingUnrequestedFeature() throws {
+        let feature = MockFeatureA(arg1: "unrequested feature")
+        feature.status = .unrequested
+
+        XCTAssertThrowsError(try sut.save(feature)) { error in
+            XCTAssertEqual(error as? FeatureCache.FeatureCacheError, .invalidFeature)
+        }
+        XCTAssertTrue(sut.isEmpty)
+    }
+
+    // MARK: save(all:) & fetch(all:)
+
+    func test_saveAll_SHOULD_saveActiveAndInactiveFeatures() throws {
+        let feature1 = MockFeatureA(arg1: "on feature")
+        feature1.status = .on(outputs: .init(_impressionId: "impression_id", out1: "out1", out2: 2))
+        let feature2 = MockFeatureB(arg1: "off feature")
+        feature2.status = .off
+
+        try sut.save(all: [feature1, feature2])
+        XCTAssertEqual(sut.count, 2)
+
+        let fetched = sut.fetch(all: [feature1, feature2])
+        XCTAssertEqual(fetched.count, 2)
         XCTAssertTrue(try feature1.isEqual(to: fetched[0]))
         XCTAssertTrue(try feature2.isEqual(to: fetched[1]))
     }
 
-    func test_remove() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    func test_saveAll_SHOULD_throwWhenSavingActiveFeatureWithoutImpressionId() throws {
+        let feature1 = MockFeatureA(arg1: "on feature - no impression id")
+        feature1.status = .on(outputs: .init(_impressionId: nil, out1: "out1", out2: 2))
+        let feature2 = MockFeatureB(arg1: "off feature")
+        feature2.status = .off
 
-        let feature1 = MockFeature()
-        let feature2 = RatingBox(productName: "name", productPrice: 0)
+        XCTAssertThrowsError(try sut.save(all: [feature2, feature1])) { error in
+            XCTAssertEqual(error as? FeatureCache.FeatureCacheError, .invalidFeature)
+        }
+        XCTAssertTrue(sut.isEmpty)
+    }
 
-        try cache.save(all: [feature1, feature2])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 2)
+    func test_saveAll_SHOULD_throwWhenSavingUnrequestedFeature() throws {
+        let feature1 = MockFeatureA(arg1: "on feature")
+        feature1.status = .on(outputs: .init(_impressionId: "impressionId", out1: "out1", out2: 2))
+        let feature2 = MockFeatureB(arg1: "off feature")
+        feature2.status = .unrequested
 
-        cache.remove(feature1)
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 1)
+        XCTAssertThrowsError(try sut.save(all: [feature1, feature2])) { error in
+            XCTAssertEqual(error as? FeatureCache.FeatureCacheError, .invalidFeature)
+        }
+        XCTAssertTrue(sut.isEmpty)
+    }
 
-        let fetched = cache.fetch(all: [feature1, feature2])
+    // MARK: remove(feature:)
+
+    func test_remove_SHOULD_removeFeatureFromTheCache() throws {
+        let feature1 = MockFeatureA(arg1: "feature1")
+        feature1.status = .off
+        let feature2 = MockFeatureB(arg1: "feature2")
+        feature2.status = .off
+
+        try sut.save(all: [feature1, feature2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 2)
+
+        sut.remove(feature1)
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 1)
+
+        let fetched = sut.fetch(all: [feature1, feature2])
         XCTAssertEqual(fetched.count, 1)
         XCTAssertTrue(try feature2.isEqual(to: fetched[0]))
     }
 
-    func test_removeAll() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    // MARK: removeAll()
 
-        let feature1 = MockFeature()
-        let feature2 = RatingBox(productName: "name", productPrice: 0)
+    func test_removeAll_SHOULD_removeAllFeaturesFromTheCache() throws {
+        let feature1 = MockFeatureA(arg1: "feature1")
+        feature1.status = .off
+        let feature2 = MockFeatureB(arg1: "feature2")
+        feature2.status = .off
 
-        try cache.save(all: [feature1, feature2])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 2)
+        try sut.save(all: [feature1, feature2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 2)
 
-        cache.removeAll()
-        XCTAssertTrue(cache.isEmpty)
-        XCTAssertEqual(cache.count, 0)
+        sut.removeAll()
+        XCTAssertTrue(sut.isEmpty)
+        XCTAssertEqual(sut.count, 0)
     }
 
-    func test_remove_withSameName() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    // MARK: removeAllWithNames(namesToRemove:)
 
-        let feature1 = RatingBox(productName: "first", productPrice: 1)
-        let feature2 = RatingBox(productName: "second", productPrice: 2)
+    func test_removeAllWithNames_SHOULD_doNothingIfNameNotFound() throws {
+        let featureA1 = MockFeatureA(arg1: "featureAa")
+        featureA1.status = .off
+        let featureA2 = MockFeatureA(arg1: "featureA2")
+        featureA2.status = .off
+        let featureB1 = MockFeatureB(arg1: "featureB1")
+        featureB1.status = .off
+        let featureB2 = MockFeatureB(arg1: "featureB2")
+        featureB2.status = .off
+        let featureC1 = MockFeatureC(arg1: "featureC1")
+        featureC1.status = .off
+        let featureC2 = MockFeatureC(arg1: "featureC2")
+        featureC2.status = .off
 
-        try cache.save(all: [feature1, feature2])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 2)
+        try sut.save(all: [featureA1, featureA2, featureB1, featureB2, featureC1, featureC2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 6)
 
-        cache.remove(feature1)
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 1)
-        XCTAssertTrue(cache.contains(feature2))
+        sut.removeAllWithNames(["unknown1", "unknown2"])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 6)
+        XCTAssertTrue(sut.contains(featureA1))
+        XCTAssertTrue(sut.contains(featureA2))
+        XCTAssertTrue(sut.contains(featureB1))
+        XCTAssertTrue(sut.contains(featureB2))
+        XCTAssertTrue(sut.contains(featureC1))
+        XCTAssertTrue(sut.contains(featureC2))
     }
 
-    func test_removeAllWithNames_OneFeature() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    func test_removeAllWithNames_SHOULD_removeAllFeaturesWithThatNameFromTheCache_oneName() throws {
+        let featureA1 = MockFeatureA(arg1: "featureAa")
+        featureA1.status = .off
+        let featureA2 = MockFeatureA(arg1: "featureA2")
+        featureA2.status = .off
+        let featureB1 = MockFeatureB(arg1: "featureB1")
+        featureB1.status = .off
+        let featureB2 = MockFeatureB(arg1: "featureB2")
+        featureB2.status = .off
+        let featureC1 = MockFeatureC(arg1: "featureC1")
+        featureC1.status = .off
+        let featureC2 = MockFeatureC(arg1: "featureC2")
+        featureC2.status = .off
 
-        let feature1 = RatingBox(productName: "first", productPrice: 1)
-        let feature2 = RatingBox(productName: "second", productPrice: 2)
-        let feature3 = MockFeature()
+        try sut.save(all: [featureA1, featureA2, featureB1, featureB2, featureC1, featureC2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 6)
 
-        try cache.save(all: [feature1, feature2, feature3])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 3)
-
-        cache.removeAllWithNames(["RatingBox"])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 1)
-
-        XCTAssertFalse(cache.contains(feature1))
-        XCTAssertFalse(cache.contains(feature2))
-        XCTAssertTrue(cache.contains(feature3))
+        sut.removeAllWithNames([MockFeatureB.name])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 4)
+        XCTAssertTrue(sut.contains(featureA1))
+        XCTAssertTrue(sut.contains(featureA2))
+        XCTAssertFalse(sut.contains(featureB1))
+        XCTAssertFalse(sut.contains(featureB2))
+        XCTAssertTrue(sut.contains(featureC1))
+        XCTAssertTrue(sut.contains(featureC2))
     }
 
-    func test_removeAllWithNames_MultipleFeatures() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    func test_removeAllWithNames_SHOULD_removeAllFeaturesWithThatNameFromTheCache_multipleNames() throws {
+        let featureA1 = MockFeatureA(arg1: "featureAa")
+        featureA1.status = .off
+        let featureA2 = MockFeatureA(arg1: "featureA2")
+        featureA2.status = .off
+        let featureB1 = MockFeatureB(arg1: "featureB1")
+        featureB1.status = .off
+        let featureB2 = MockFeatureB(arg1: "featureB2")
+        featureB2.status = .off
+        let featureC1 = MockFeatureC(arg1: "featureC1")
+        featureC1.status = .off
+        let featureC2 = MockFeatureC(arg1: "featureC2")
+        featureC2.status = .off
 
-        let feature1 = RatingBox(productName: "first", productPrice: 1)
-        let feature2 = RatingBox(productName: "second", productPrice: 2)
-        let feature3 = MockFeature()
-        let feature4 = ProductInfo()
+        try sut.save(all: [featureA1, featureA2, featureB1, featureB2, featureC1, featureC2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 6)
 
-        try cache.save(all: [feature1, feature2, feature3, feature4])
-        XCTAssertFalse(cache.isEmpty)
-        XCTAssertEqual(cache.count, 4)
-
-        cache.removeAllWithNames([feature1.name, feature2.name, feature3.name])
-        XCTAssertEqual(cache.count, 1)
-
-        XCTAssertFalse(cache.contains(feature1))
-        XCTAssertFalse(cache.contains(feature2))
-        XCTAssertFalse(cache.contains(feature3))
-        XCTAssertTrue(cache.contains(feature4))
+        sut.removeAllWithNames([MockFeatureB.name, MockFeatureC.name])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 2)
+        XCTAssertTrue(sut.contains(featureA1))
+        XCTAssertTrue(sut.contains(featureA2))
+        XCTAssertFalse(sut.contains(featureB1))
+        XCTAssertFalse(sut.contains(featureB2))
+        XCTAssertFalse(sut.contains(featureC1))
+        XCTAssertFalse(sut.contains(featureC2))
     }
 
-    func test_contains() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    func test_removeAllWithNames_SHOULD_removeAllFeaturesWithThatNameFromTheCache_allNames() throws {
+        let featureA1 = MockFeatureA(arg1: "featureAa")
+        featureA1.status = .off
+        let featureA2 = MockFeatureA(arg1: "featureA2")
+        featureA2.status = .off
+        let featureB1 = MockFeatureB(arg1: "featureB1")
+        featureB1.status = .off
+        let featureB2 = MockFeatureB(arg1: "featureB2")
+        featureB2.status = .off
+        let featureC1 = MockFeatureC(arg1: "featureC1")
+        featureC1.status = .off
+        let featureC2 = MockFeatureC(arg1: "featureC2")
+        featureC2.status = .off
 
-        let feature1 = MockFeature()
-        let feature2 = RatingBox(productName: "name", productPrice: 0)
-        try cache.save(feature1)
+        try sut.save(all: [featureA1, featureA2, featureB1, featureB2, featureC1, featureC2])
+        XCTAssertFalse(sut.isEmpty)
+        XCTAssertEqual(sut.count, 6)
 
-        XCTAssertTrue(cache.contains(feature1))
-        XCTAssertFalse(cache.contains(feature2))
+        sut.removeAllWithNames([MockFeatureB.name, MockFeatureC.name, MockFeatureA.name])
+        XCTAssertTrue(sut.isEmpty)
+        XCTAssertEqual(sut.count, 0)
+        XCTAssertFalse(sut.contains(featureA1))
+        XCTAssertFalse(sut.contains(featureA2))
+        XCTAssertFalse(sut.contains(featureB1))
+        XCTAssertFalse(sut.contains(featureB2))
+        XCTAssertFalse(sut.contains(featureC1))
+        XCTAssertFalse(sut.contains(featureC2))
     }
 
-    func test_contains_SameFeatureDifferentArgs() throws {
-        let cache = FeatureCache()
-        XCTAssertTrue(cache.isEmpty)
+    // MARK: contains(feature:)
 
-        let feature1 = RatingBox(productName: "first", productPrice: 1)
-        let feature2 = RatingBox(productName: "second", productPrice: 2)
-        try cache.save(feature1)
+    func test_contains_SHOULD_returnTrueIfInCacheFalseOtherwise() throws {
+        let feature1 = MockFeatureA(arg1: "feature1")
+        feature1.status = .off
+        let feature2 = MockFeatureB(arg1: "feature2")
+        feature2.status = .off
+        try sut.save(feature1)
 
-        XCTAssertTrue(cache.contains(feature1))
-        XCTAssertFalse(cache.contains(feature2))
+        XCTAssertTrue(sut.contains(feature1))
+        XCTAssertFalse(sut.contains(feature2))
+    }
+
+    func test_contains_SHOULD_differentiateBetweenMultipleInstancesOfTheSameFeature() throws {
+        let feature1 = MockFeatureA(arg1: "feature1")
+        feature1.status = .off
+        let feature2 = MockFeatureA(arg1: "feature2")
+        feature2.status = .off
+        try sut.save(feature1)
+
+        XCTAssertTrue(sut.contains(feature1))
+        XCTAssertFalse(sut.contains(feature2))
     }
 }
 
 private extension FeatureProtocol {
     func isEqual(to cacheItem: FeatureCache.CacheItem?) throws -> Bool {
         guard let cacheItem else { return false }
-        let outputs = try outputs()
 
-        return cacheItem.name == name &&
-        cacheItem.isActive == isActive &&
-        cacheItem.outputs == outputs &&
-        cacheItem.impressionId == impressionId
+        switch status {
+        case .unrequested:
+            return false
+
+        case .off:
+            return cacheItem == .init(name: name, status: .off)
+
+        case let .on(outputs):
+            guard let impressionId = outputs._impressionId,
+                  let outputsJson = try? outputs.encodeToJSONObject() else {
+                return false
+            }
+
+            return cacheItem == .init(name: name, status: .on(outputsJson: outputsJson, cachedImpressionId: impressionId))
+        }
     }
 }

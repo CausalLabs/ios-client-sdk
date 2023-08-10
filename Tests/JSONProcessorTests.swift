@@ -15,7 +15,6 @@ final class JSONProcessorTests: XCTestCase {
             productName: "name",
             productPrice: 10.0
         )
-        ratingBox.impressionId = fakeImpressionId
 
         let jsonData = try self.jsonProcessor.encodeRequestFeatures(
             features: [ratingBox],
@@ -52,7 +51,6 @@ final class JSONProcessorTests: XCTestCase {
             productName: "name",
             productPrice: 10.0
         )
-        ratingBox.impressionId = fakeImpressionId
 
         let jsonData = try self.jsonProcessor.encodeRequestFeatures(
             features: [ratingBox],
@@ -83,7 +81,7 @@ final class JSONProcessorTests: XCTestCase {
 
     func test_encode_signalEvent() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
-        let event = RatingBox.Rating(stars: 5)
+        let event = RatingBox.Event.Rating(stars: 5)
 
         let jsonData = try self.jsonProcessor.encodeSignalEvent(
             event: event,
@@ -108,19 +106,20 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(jsonData.jsonString(), expectedJSON)
     }
 
-    func test_encode_SignalCachedFeatures() async throws {
+    func test_encodeSignalCachedFeatures_SHOULD_generateWithOnAndOffFeatures() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
-        let ratingBox = RatingBox(productName: "product", productPrice: 10)
-        ratingBox.impressionId = "old-impression-id"
 
+        let outputs = MockFeatureA.Outputs(_impressionId: "old-impression-id", out1: "out", out2: 3)
         let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(
             cachedItems: [
                 FeatureCache.CacheItem(
-                    name: ratingBox.name,
-                    impressionId: ratingBox.impressionId,
-                    isActive: ratingBox.isActive,
-                    outputs: try ratingBox.outputs()
-                )
+                    name: "OnFeature",
+                    status: .on(
+                        outputsJson: outputs.encodeToJSONObject(),
+                        cachedImpressionId: "old-impression-id"
+                    )
+                ),
+                FeatureCache.CacheItem(name: "OffFeature", status: .off)
             ],
             session: session,
             impressionId: fakeImpressionId
@@ -132,7 +131,10 @@ final class JSONProcessorTests: XCTestCase {
             "deviceId" : "\(fakeDeviceId)"
           },
           "impressions" : {
-            "RatingBox" : {
+            "OffFeature" : {
+              "newImpression" : "\(fakeImpressionId)"
+            },
+            "OnFeature" : {
               "impression" : "old-impression-id",
               "newImpression" : "\(fakeImpressionId)"
             }
@@ -203,12 +205,17 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(features.count, 1)
         let session = try XCTUnwrap(_session as? Session)
         XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.productName, "product name")
-        XCTAssertEqual(ratingBox.productPrice, 0)
-        XCTAssertEqual(ratingBox.impressionId, fakeImpressionId)
-        XCTAssertTrue(ratingBox.isActive)
-        XCTAssertEqual(ratingBox.callToAction, "TRY THIS")
-        XCTAssertEqual(ratingBox.actionButton, "New Button")
+        XCTAssertEqual(ratingBox.args.productName, "product name")
+        XCTAssertEqual(ratingBox.args.productPrice, 0)
+
+        guard case let .on(outputs) = ratingBox.status else {
+            XCTFail("Expected `on` case.")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, fakeImpressionId)
+        XCTAssertEqual(outputs.callToAction, "TRY THIS")
+        XCTAssertEqual(outputs.actionButton, "New Button")
     }
 
     func test_decodeRequestFeatures_WITH_impressionIdInResponse_nonNilInputImpressionId() async throws {
@@ -249,12 +256,17 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(features.count, 1)
         let session = try XCTUnwrap(_session as? Session)
         XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.productName, "product name")
-        XCTAssertEqual(ratingBox.productPrice, 0)
-        XCTAssertEqual(ratingBox.impressionId, inputImpressionId)
-        XCTAssertTrue(ratingBox.isActive)
-        XCTAssertEqual(ratingBox.callToAction, "TRY THIS")
-        XCTAssertEqual(ratingBox.actionButton, "New Button")
+        XCTAssertEqual(ratingBox.args.productName, "product name")
+        XCTAssertEqual(ratingBox.args.productPrice, 0)
+
+        guard case let .on(outputs) = ratingBox.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, inputImpressionId)
+        XCTAssertEqual(outputs.callToAction, "TRY THIS")
+        XCTAssertEqual(outputs.actionButton, "New Button")
     }
 
     func test_decodeRequestFeatures_WITH_noImpressionIdInResponse_nilInputImpressionId() async throws {
@@ -293,12 +305,17 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(features.count, 1)
         let session = try XCTUnwrap(_session as? Session)
         XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.productName, "product name")
-        XCTAssertEqual(ratingBox.productPrice, 0)
-        XCTAssertNil(ratingBox.impressionId)
-        XCTAssertTrue(ratingBox.isActive)
-        XCTAssertEqual(ratingBox.callToAction, "TRY THIS")
-        XCTAssertEqual(ratingBox.actionButton, "New Button")
+        XCTAssertEqual(ratingBox.args.productName, "product name")
+        XCTAssertEqual(ratingBox.args.productPrice, 0)
+
+        guard case let .on(outputs) = ratingBox.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertNil(outputs._impressionId)
+        XCTAssertEqual(outputs.callToAction, "TRY THIS")
+        XCTAssertEqual(outputs.actionButton, "New Button")
     }
 
     func test_decodeRequestFeatures_WITH_noImpressionIdInResponse_nonNilInputImpressionId() async throws {
@@ -338,12 +355,17 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(features.count, 1)
         let session = try XCTUnwrap(_session as? Session)
         XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.productName, "product name")
-        XCTAssertEqual(ratingBox.productPrice, 0)
-        XCTAssertEqual(ratingBox.impressionId, inputImpressionId)
-        XCTAssertTrue(ratingBox.isActive)
-        XCTAssertEqual(ratingBox.callToAction, "TRY THIS")
-        XCTAssertEqual(ratingBox.actionButton, "New Button")
+        XCTAssertEqual(ratingBox.args.productName, "product name")
+        XCTAssertEqual(ratingBox.args.productPrice, 0)
+
+        guard case let .on(outputs) = ratingBox.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, inputImpressionId)
+        XCTAssertEqual(outputs.callToAction, "TRY THIS")
+        XCTAssertEqual(outputs.actionButton, "New Button")
     }
 
     func test_decodeRequestFeatures_NonNilImpressionId() async throws {
@@ -385,12 +407,17 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(features.count, 1)
         let session = try XCTUnwrap(_session as? Session)
         XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.productName, "product name")
-        XCTAssertEqual(ratingBox.productPrice, 0)
-        XCTAssertEqual(ratingBox.impressionId, "passed impression id")
-        XCTAssertTrue(ratingBox.isActive)
-        XCTAssertEqual(ratingBox.callToAction, "TRY THIS")
-        XCTAssertEqual(ratingBox.actionButton, "New Button")
+        XCTAssertEqual(ratingBox.args.productName, "product name")
+        XCTAssertEqual(ratingBox.args.productPrice, 0)
+
+        guard case let .on(outputs) = ratingBox.status else {
+            XCTFail("Expected `on` status")
+            return
+        }
+
+        XCTAssertEqual(outputs._impressionId, "passed impression id")
+        XCTAssertEqual(outputs.callToAction, "TRY THIS")
+        XCTAssertEqual(outputs.actionButton, "New Button")
     }
 
     func test_decodeRequestFeatures_missingSession() async throws {

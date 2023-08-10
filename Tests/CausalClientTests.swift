@@ -29,10 +29,10 @@ final class CausalClientTests: XCTestCase {
 
     func test_requestFeatures_hitsCorrectEndpoint() async throws {
         let mockNetworkingClient = MockNetworkingClient()
-        let client = await CausalClient.fake(featureCache: .shared, mockNetworkingClient: mockNetworkingClient)
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
 
         _ = await client.requestFeatures(
-            [MockFeature()],
+            [ProductInfo()],
             impressionId: fakeImpressionId
         )
 
@@ -44,10 +44,7 @@ final class CausalClientTests: XCTestCase {
         let mockNetworkingClient = MockNetworkingClient()
         mockNetworkingClient.stubbedError = CausalError.fakeNetwork()
 
-        let client = await CausalClient.fake(
-            featureCache: .shared,
-            mockNetworkingClient: mockNetworkingClient
-        )
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
 
         let result = await client.requestFeatures(
             [RatingBox(productName: "name", productPrice: 10)],
@@ -58,52 +55,90 @@ final class CausalClientTests: XCTestCase {
     }
 
     func test_requestFeatures_throwsError_missingSession() async throws {
-        let client = await CausalClient.fake(featureCache: .shared)
+        let client = CausalClient.fake()
         client.session = nil
 
-        let result = await client.requestFeatures([MockFeature()])
+        let result = await client.requestFeatures([ProductInfo()])
         XCTAssertEqual(result as? CausalError, CausalError.missingSession)
     }
 
-    func test_signalEvent_hitsCorrectEndpoint() async throws {
+    func test_signalAndWait_feature_hitsCorrectEndpoint() async throws {
         let mockNetworkingClient = MockNetworkingClient()
-        let client = await CausalClient.fake(
-            featureCache: .shared,
-            mockNetworkingClient: mockNetworkingClient
-        )
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
 
+        let mockEvent = MockFeatureEvent()
         try await client.signalAndWait(
-            event: MockEvent(),
-            impressionId: fakeImpressionId
+            featureEvent: (event: mockEvent, impressionId: fakeImpressionId)
         )
 
         XCTAssertEqual(mockNetworkingClient.receivedBaseURL, fakeImpressionServer)
         XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .signal)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["impressionId"], fakeImpressionId)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["event"] as? String, mockEvent.name)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["args"] as? JSONObject, mockEvent.serialized())
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["id"] as? JSONObject, ["deviceId": "MockDeviceId"])
     }
 
-    func test_signalEvent_throwsErrorFromNetwork() async throws {
+    func test_signalAndWait_session_hitsCorrectEndpoint() async throws {
+        let mockNetworkingClient = MockNetworkingClient()
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
+
+        let mockEvent = MockSessionEvent()
+        try await client.signalAndWait(sessionEvent: mockEvent)
+
+        XCTAssertEqual(mockNetworkingClient.receivedBaseURL, fakeImpressionServer)
+        XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .signal)
+        XCTAssertNil(mockNetworkingClient.receivedBodyJSON["impressionId"])
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["event"] as? String, mockEvent.name)
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["args"] as? JSONObject, mockEvent.serialized())
+        XCTAssertEqual(mockNetworkingClient.receivedBodyJSON["id"] as? JSONObject, ["deviceId": "MockDeviceId"])
+    }
+
+    func test_signalAndWait_feature_throwsErrorFromNetwork() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         mockNetworkingClient.stubbedError = CausalError.fakeNetwork()
 
-        let client = await CausalClient.fake(
-            featureCache: .shared,
-            mockNetworkingClient: mockNetworkingClient
-        )
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
 
         await AsyncAssertThrowsError(
-            try await client.signalAndWait(event: MockEvent(), impressionId: fakeImpressionId),
+            try await client.signalAndWait(featureEvent: (event: MockFeatureEvent(), impressionId: fakeImpressionId)),
             "client should throw error from networking client"
         )
 
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "network client should be called")
     }
 
-    func test_signalEvent_throwsError_missingSession() async throws {
-        let client = await CausalClient.fake(featureCache: .shared)
+    func test_signalAndWait_session_throwsErrorFromNetwork() async throws {
+        let mockNetworkingClient = MockNetworkingClient()
+        mockNetworkingClient.stubbedError = CausalError.fakeNetwork()
+
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
+
+        await AsyncAssertThrowsError(
+            try await client.signalAndWait(sessionEvent: MockSessionEvent()),
+            "client should throw error from networking client"
+        )
+
+        XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled, "network client should be called")
+    }
+
+    func test_signalAndWait_feature_throwsError_missingSession() async throws {
+        let client = CausalClient.fake()
         client.session = nil
 
         await AsyncAssertThrowsError(
-            try await client.signalAndWait(event: MockEvent(), impressionId: fakeImpressionId)
+            try await client.signalAndWait(featureEvent: (event: MockFeatureEvent(), impressionId: fakeImpressionId))
+        ) { error in
+            XCTAssertEqual(error as? CausalError, CausalError.missingSession)
+        }
+    }
+
+    func test_signalAndWait_session_throwsError_missingSession() async throws {
+        let client = CausalClient.fake()
+        client.session = nil
+
+        await AsyncAssertThrowsError(
+            try await client.signalAndWait(sessionEvent: MockSessionEvent())
         ) { error in
             XCTAssertEqual(error as? CausalError, CausalError.missingSession)
         }
@@ -112,8 +147,7 @@ final class CausalClientTests: XCTestCase {
     func test_keepAlive_hitsCorrectEndpoint() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let session = Session(deviceId: "id", required: 42)
-        let client = await CausalClient.fake(
-            featureCache: .shared,
+        let client = CausalClient.fake(
             mockNetworkingClient: mockNetworkingClient,
             session: session
         )
@@ -153,25 +187,23 @@ final class CausalClientTests: XCTestCase {
         }
         """
 
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let client = CausalClient.fake(
             featureCache: cache,
             mockNetworkingClient: mockNetworkingClient
         )
 
         let features: [any FeatureProtocol] = [
-            MockFeature(),
+            ProductInfo(),
             RatingBox(productName: "name", productPrice: 10)
         ]
 
         // request cache fill
         try await client.requestCacheFill(features: features)
-        let count = await cache.count
-        XCTAssertEqual(count, 2)
+        XCTAssertEqual(cache.count, 2)
 
-        await client.clearCache()
-        let isEmpty = await cache.isEmpty
-        XCTAssertTrue(isEmpty)
+        client.clearCache()
+        XCTAssertTrue(cache.isEmpty)
     }
 
     func test_requestFeatures_updatesInPlace_andCachesUpdates() async throws {
@@ -195,39 +227,38 @@ final class CausalClientTests: XCTestCase {
         }
         """
 
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let client = CausalClient.fake(
             featureCache: cache,
             mockNetworkingClient: mockNetworkingClient
         )
 
         let feature = RatingBox(productName: "name", productPrice: 42)
-        XCTAssertEqual(feature.callToAction, "Rate this product!")
-        XCTAssertEqual(feature.actionButton, "Send Review")
-        XCTAssertNil(feature.impressionId)
-
-        let isEmpty = await cache.isEmpty
-        XCTAssertTrue(isEmpty)
+        XCTAssertEqual(feature.status, .unrequested)
+        XCTAssertTrue(cache.isEmpty)
 
         let requestImpressionId = "request impression id"
         let error = await client.requestFeatures([feature], impressionId: requestImpressionId)
         XCTAssertNil(error)
 
         // Arguments
-        XCTAssertEqual(feature.productName, "name")
-        XCTAssertEqual(feature.productPrice, 42)
+        XCTAssertEqual(feature.args.productName, "name")
+        XCTAssertEqual(feature.args.productPrice, 42)
 
         // Outputs
-        XCTAssertEqual(feature.callToAction, "Different Call To Action")
-        XCTAssertEqual(feature.actionButton, "Different Action Button")
-        XCTAssertEqual(feature.impressionId, requestImpressionId)
+        guard case let .on(outputs) = feature.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs.callToAction, "Different Call To Action")
+        XCTAssertEqual(outputs.actionButton, "Different Action Button")
+        XCTAssertEqual(outputs._impressionId, requestImpressionId)
 
         // Verify cache saved feature
-        let count = await cache.count
-        XCTAssertEqual(count, 1)
+        XCTAssertEqual(cache.count, 1)
 
-        let contains = await cache.contains(feature)
-        XCTAssertTrue(contains)
+        XCTAssertTrue(cache.contains(feature))
     }
 
     func test_requestFeatures_withEmptyCache_savesToCache() async throws {
@@ -254,7 +285,7 @@ final class CausalClientTests: XCTestCase {
         }
         """
 
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let timer = SessionTimer()
         let client = CausalClient.fake(
             featureCache: cache,
@@ -263,12 +294,11 @@ final class CausalClientTests: XCTestCase {
         )
 
         let features: [any FeatureProtocol] = [
-            MockFeature(),
+            ProductInfo(),
             RatingBox(productName: "name", productPrice: 10)
         ]
 
-        var isEmpty = await cache.isEmpty
-        XCTAssertTrue(isEmpty)
+        XCTAssertTrue(cache.isEmpty)
         XCTAssertTrue(timer.isExpired)
 
         await client.requestFeatures(
@@ -280,17 +310,14 @@ final class CausalClientTests: XCTestCase {
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled)
 
         // Verify cache saved features
-        isEmpty = await cache.isEmpty
-        XCTAssertFalse(isEmpty)
+        XCTAssertFalse(cache.isEmpty)
 
-        let count = await cache.count
-        XCTAssertEqual(count, 2)
+        XCTAssertEqual(cache.count, 2)
 
         // Verify session is valid
         XCTAssertFalse(timer.isExpired)
     }
 
-    @MainActor
     func test_requestFeatures_WITH_emptyCache_SHOULD_mutateFeaturesWithResponseValues() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let cache = FeatureCache()
@@ -337,19 +364,29 @@ final class CausalClientTests: XCTestCase {
         let requestImpressionId = "request impression id"
         await client.requestFeatures(features, impressionId: requestImpressionId)
 
-        XCTAssertEqual(feature1.productName, "displayName")
-        XCTAssertEqual(feature1.price, .init(currency: .EUR, amount: 25.99))
-        XCTAssertTrue(feature1.isActive)
-        XCTAssertEqual(feature1.impressionId, requestImpressionId)
+        XCTAssertEqual(feature1.args.productName, "displayName")
+        XCTAssertEqual(feature1.args.price, .init(currency: .EUR, amount: 25.99))
 
-        XCTAssertEqual(feature2.productName, "name")
-        XCTAssertEqual(feature2.productPrice, 10)
-        XCTAssertEqual(feature2.actionButton, "response actionButton")
-        XCTAssertEqual(feature2.callToAction, "response callToAction")
-        XCTAssertEqual(feature2.impressionId, requestImpressionId)
+        guard case let .on(outputs1) = feature1.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs1._impressionId, requestImpressionId)
+
+        XCTAssertEqual(feature2.args.productName, "name")
+        XCTAssertEqual(feature2.args.productPrice, 10)
+
+        guard case let .on(outputs2) = feature2.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs2.actionButton, "response actionButton")
+        XCTAssertEqual(outputs2.callToAction, "response callToAction")
+        XCTAssertEqual(outputs2._impressionId, requestImpressionId)
     }
 
-    @MainActor
     func test_requestFeatures_WITH_fullCache_SHOULD_mutateFeaturesWithCachedValues() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let cache = FeatureCache()
@@ -366,40 +403,37 @@ final class CausalClientTests: XCTestCase {
 
         let cachedFeature1 = ProductDisplay(productName: "displayName", price: .init(currency: .EUR, amount: 25.99))
         try cachedFeature1.update(
-            outputJson: [
-                "_impressionId": "cached _impressionId"
-            ],
-            isActive: true
+            request: .on(
+                outputJson: [
+                    "_impressionId": "cached _impressionId"
+                ],
+                impressionId: nil
+            )
         )
 
         let cachedFeature2 = RatingBox(productName: "name", productPrice: 10)
-        try cachedFeature2.update(
-            outputJson: [
-                "actionButton": "cached actionButton",
-                "callToAction": "cached callToAction",
-                "_impressionId": "cached _impressionId"
-            ],
-            isActive: false
-        )
+        try cachedFeature2.update(request: .off)
 
         try cache.save(cachedFeature1)
         try cache.save(cachedFeature2)
 
         let requestImpressionId = "request impression id"
         await client.requestFeatures(features, impressionId: requestImpressionId)
-        XCTAssertEqual(feature1.productName, "displayName")
-        XCTAssertEqual(feature1.price, .init(currency: .EUR, amount: 25.99))
-        XCTAssertTrue(feature1.isActive)
-        XCTAssertEqual(feature1.impressionId, requestImpressionId)
+        XCTAssertEqual(feature1.args.productName, "displayName")
+        XCTAssertEqual(feature1.args.price, .init(currency: .EUR, amount: 25.99))
 
-        XCTAssertEqual(feature2.productName, "name")
-        XCTAssertEqual(feature2.productPrice, 10)
-        XCTAssertEqual(feature2.actionButton, "cached actionButton")
-        XCTAssertEqual(feature2.callToAction, "cached callToAction")
-        XCTAssertEqual(feature2.impressionId, requestImpressionId)
+        guard case let .on(outputs1) = feature1.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs1._impressionId, requestImpressionId)
+
+        XCTAssertEqual(feature2.args.productName, "name")
+        XCTAssertEqual(feature2.args.productPrice, 10)
+        XCTAssertEqual(feature2.status, .off)
     }
 
-    @MainActor
     func test_requestFeature_WITH_emptyCache_SHOULD_mutateFeaturesWithResponseValues() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let cache = FeatureCache()
@@ -435,14 +469,19 @@ final class CausalClientTests: XCTestCase {
         let requestImpressionId = "request impression id"
         await client.requestFeature(feature, impressionId: requestImpressionId)
 
-        XCTAssertEqual(feature.productName, "name")
-        XCTAssertEqual(feature.productPrice, 10)
-        XCTAssertEqual(feature.actionButton, "response actionButton")
-        XCTAssertEqual(feature.callToAction, "response callToAction")
-        XCTAssertEqual(feature.impressionId, requestImpressionId)
+        XCTAssertEqual(feature.args.productName, "name")
+        XCTAssertEqual(feature.args.productPrice, 10)
+
+        guard case let .on(outputs) = feature.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs.actionButton, "response actionButton")
+        XCTAssertEqual(outputs.callToAction, "response callToAction")
+        XCTAssertEqual(outputs._impressionId, requestImpressionId)
     }
 
-    @MainActor
     func test_requestFeature_WITH_fullCache_SHOULD_mutateFeaturesWithCachedValues() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         let cache = FeatureCache()
@@ -457,12 +496,14 @@ final class CausalClientTests: XCTestCase {
 
         let cachedFeature = RatingBox(productName: "name", productPrice: 10)
         try cachedFeature.update(
-            outputJson: [
-                "actionButton": "cached actionButton",
-                "callToAction": "cached callToAction",
-                "_impressionId": "cached _impressionId"
-            ],
-            isActive: false
+            request: .on(
+                outputJson: [
+                    "actionButton": "cached actionButton",
+                    "callToAction": "cached callToAction",
+                    "_impressionId": "cached _impressionId"
+                ],
+                impressionId: nil
+            )
         )
 
         try cache.save(cachedFeature)
@@ -470,16 +511,22 @@ final class CausalClientTests: XCTestCase {
         let requestImpressionId = "request impression id"
         await client.requestFeature(feature, impressionId: requestImpressionId)
 
-        XCTAssertEqual(feature.productName, "name")
-        XCTAssertEqual(feature.productPrice, 10)
-        XCTAssertEqual(feature.actionButton, "cached actionButton")
-        XCTAssertEqual(feature.callToAction, "cached callToAction")
-        XCTAssertEqual(feature.impressionId, requestImpressionId)
+        XCTAssertEqual(feature.args.productName, "name")
+        XCTAssertEqual(feature.args.productPrice, 10)
+
+        guard case let .on(outputs) = feature.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
+
+        XCTAssertEqual(outputs.actionButton, "cached actionButton")
+        XCTAssertEqual(outputs.callToAction, "cached callToAction")
+        XCTAssertEqual(outputs._impressionId, requestImpressionId)
     }
 
     func test_requestFeatures_withFullCache_fetchesFromCache() async throws {
         let mockNetworkingClient = MockNetworkingClient()
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let timer = SessionTimer()
         let client = CausalClient.fake(
             featureCache: cache,
@@ -487,14 +534,8 @@ final class CausalClientTests: XCTestCase {
             sessionTimer: timer
         )
 
-        let initialImpressionId = String.newId()
-
-        let feature1 = RatingBox(productName: "feature1", productPrice: 1)
-        feature1.impressionId = initialImpressionId
-
-        let feature2 = RatingBox(productName: "feature2", productPrice: 2)
-        feature2.impressionId = initialImpressionId
-
+        let feature1 = MockFeatureA(arg1: "feature1")
+        let feature2 = MockFeatureB(arg1: "feature2")
         let features: [any FeatureProtocol] = [feature1, feature2]
 
         mockNetworkingClient.stubbedResponse = """
@@ -506,16 +547,16 @@ final class CausalClientTests: XCTestCase {
             },
             "impressions": [
                 {
-                    "productName": "feature1",
-                    "productPrice": 1,
-                    "callToAction": "feature1 cached callToAction",
-                    "actionButton": "feature1 cached actionButton"
+                    "arg1": "feature1",
+                    "out1": "feature1 cached out1",
+                    "out2": 2,
+                    "_impressionId": "server-impression-id"
                 },
                 {
-                    "productName": "feature2",
-                    "productPrice": 2,
-                    "callToAction": "feature2 cached callToAction",
-                    "actionButton": "feature2 cached actionButton"
+                    "arg1": "feature2",
+                    "out1": "feature2 cached out1",
+                    "out2": 3,
+                    "_impressionId": "server-impression-id"
                 },
             ]
         }
@@ -526,27 +567,34 @@ final class CausalClientTests: XCTestCase {
         XCTAssertEqual(mockNetworkingClient.sendRequestCallCount, 1, "should hit network to fill cache")
         XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .features, "should hit features endpoint")
 
-        let isEmpty = await cache.isEmpty
+        let isEmpty = cache.isEmpty
         XCTAssertFalse(isEmpty)
 
-        let count = await cache.count
+        let count = cache.count
         XCTAssertEqual(count, 2)
 
         // request same features
-        await client.requestFeatures(features, impressionId: fakeImpressionId)
+        let requestResponse = await client.requestFeatures(features, impressionId: fakeImpressionId)
+        XCTAssertNil(requestResponse)
 
         // we asynchronously signal cached features
         // thus, sleep to let that call complete
         sleep(2)
 
-        // Impression id should be updated.
-        XCTAssertEqual(feature1.impressionId, fakeImpressionId)
-        XCTAssertEqual(feature1.callToAction, "feature1 cached callToAction")
-        XCTAssertEqual(feature1.actionButton, "feature1 cached actionButton")
+        guard case let .on(outputs1) = feature1.status,
+              case let .on(outputs2) = feature2.status else {
+            XCTFail("Expected `on` status.")
+            return
+        }
 
-        XCTAssertEqual(feature2.impressionId, fakeImpressionId)
-        XCTAssertEqual(feature2.callToAction, "feature2 cached callToAction")
-        XCTAssertEqual(feature2.actionButton, "feature2 cached actionButton")
+        // Impression id should be updated.
+        XCTAssertEqual(outputs1._impressionId, fakeImpressionId)
+        XCTAssertEqual(outputs1.out1, "feature1 cached out1")
+        XCTAssertEqual(outputs1.out2, 2)
+
+        XCTAssertEqual(outputs2._impressionId, fakeImpressionId)
+        XCTAssertEqual(outputs2.out1, "feature2 cached out1")
+        XCTAssertEqual(outputs2.out2, 3)
 
         // Verify NetworkClient was only called twice
         // And the most recent call should have been to signal
@@ -554,7 +602,7 @@ final class CausalClientTests: XCTestCase {
         XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .signal, "should hit signal endpoint for cached features")
     }
 
-    func test_requestCacheFill() async throws {
+    func test_requestCacheFill_SHOULD_makeAPICall() async throws {
         let mockNetworkingClient = MockNetworkingClient()
         mockNetworkingClient.stubbedResponse = """
         {
@@ -577,28 +625,119 @@ final class CausalClientTests: XCTestCase {
             ]
         }
         """
-        let cache = await FeatureCache()
-        let client = CausalClient.fake(featureCache: cache, mockNetworkingClient: mockNetworkingClient)
+        let client = CausalClient.fake(mockNetworkingClient: mockNetworkingClient)
 
         let features: [any FeatureProtocol] = [
-            MockFeature(),
+            ProductInfo(),
             RatingBox(productName: "name", productPrice: 10)
         ]
-
-        var isEmpty = await cache.isEmpty
-        XCTAssertTrue(isEmpty)
 
         try await client.requestCacheFill(features: features)
 
         // Verify NetworkClient was called
         XCTAssertTrue(mockNetworkingClient.sendRequestWasCalled)
+        XCTAssertEqual(mockNetworkingClient.receivedEndpoint, .features)
+        // swiftlint:disable:next line_length
+        XCTAssertEqual(mockNetworkingClient.receivedBodyString, "{\n  \"args\" : {\n    \"deviceId\" : \"MockDeviceId\"\n  },\n  \"reqs\" : [\n    {\n      \"name\" : \"ProductInfo\",\n      \"args\" : {\n\n      }\n    },\n    {\n      \"name\" : \"RatingBox\",\n      \"args\" : {\n        \"productName\" : \"name\",\n        \"productPrice\" : 10\n      }\n    }\n  ]\n}")
+    }
+
+    func test_requestCacheFill_SHOULD_addValuesToTheCache() async throws {
+        let mockNetworkingClient = MockNetworkingClient()
+        mockNetworkingClient.stubbedResponse = """
+        {
+            "session": {
+                "deviceId": "8EB5B974-6BDF-44ED-8D1B-C1215C3B0FA3",
+                "sessionId": "f45f7661-c338-4d24-9f00-1b02c3cf68f7",
+                "startTime": 1687298716527
+            },
+            "impressions": [
+                {
+                    "_impressionId": "response-impression-id",
+                },
+                {
+                    "product": "name",
+                    "productPrice": 42,
+                    "_impressionId": "response-impression-id",
+                    "callToAction": "Different Call To Action",
+                    "actionButton": "Different Action Button"
+                }
+            ]
+        }
+        """
+        let cache = FeatureCache()
+        let client = CausalClient.fake(featureCache: cache, mockNetworkingClient: mockNetworkingClient)
+
+        let feature1 = ProductInfo()
+        let feature2 = RatingBox(productName: "name", productPrice: 10)
+        let features: [any FeatureProtocol] = [feature1, feature2]
+
+        XCTAssertTrue(cache.isEmpty)
+
+        try await client.requestCacheFill(features: features)
 
         // Verify cache saved features
-        isEmpty = await cache.isEmpty
-        XCTAssertFalse(isEmpty)
+        XCTAssertFalse(cache.isEmpty)
+        XCTAssertEqual(cache.count, 2)
+        XCTAssertEqual(
+            cache.fetch(feature1),
+            .init(
+                name: "ProductInfo",
+                status: .on(
+                    outputsJson: ["_impressionId": "response-impression-id"],
+                    cachedImpressionId: "response-impression-id"
+                )
+            )
+        )
+        XCTAssertEqual(
+            cache.fetch(feature2),
+            .init(
+                name: "RatingBox",
+                status: .on(
+                    outputsJson: [
+                        "callToAction": "Different Call To Action",
+                        "_impressionId": "response-impression-id",
+                        "actionButton": "Different Action Button"
+                    ],
+                    cachedImpressionId: "response-impression-id"
+                )
+            )
+        )
+    }
 
-        let count = await cache.count
-        XCTAssertEqual(count, 2)
+    func test_requestCacheFill_SHOULD_notUpdateInputFeatureStatus() async throws {
+        let mockNetworkingClient = MockNetworkingClient()
+        mockNetworkingClient.stubbedResponse = """
+        {
+            "session": {
+                "deviceId": "8EB5B974-6BDF-44ED-8D1B-C1215C3B0FA3",
+                "sessionId": "f45f7661-c338-4d24-9f00-1b02c3cf68f7",
+                "startTime": 1687298716527
+            },
+            "impressions": [
+                {
+                    "_impressionId": "response-impression-id",
+                },
+                {
+                    "product": "name",
+                    "productPrice": 42,
+                    "_impressionId": "response-impression-id",
+                    "callToAction": "Different Call To Action",
+                    "actionButton": "Different Action Button"
+                }
+            ]
+        }
+        """
+        let cache = FeatureCache()
+        let client = CausalClient.fake(featureCache: cache, mockNetworkingClient: mockNetworkingClient)
+
+        let feature1 = ProductInfo()
+        let feature2 = RatingBox(productName: "name", productPrice: 10)
+        let features: [any FeatureProtocol] = [feature1, feature2]
+
+        try await client.requestCacheFill(features: features)
+
+        XCTAssertEqual(feature1.status, .unrequested)
+        XCTAssertEqual(feature2.status, .unrequested)
     }
 
     func test_requestFeature_assignNewSession_requestFeatureAgain() async throws {
@@ -622,7 +761,7 @@ final class CausalClientTests: XCTestCase {
         }
         """
 
-        let cache = await FeatureCache()
+        let cache = FeatureCache()
         let initialSession = MockSession()
         let timer = SessionTimer()
         let client = CausalClient.fake(
@@ -633,8 +772,7 @@ final class CausalClientTests: XCTestCase {
         )
 
         let feature = RatingBox(productName: "name", productPrice: 10)
-        var isEmpty = await cache.isEmpty
-        XCTAssertTrue(isEmpty)
+        XCTAssertTrue(cache.isEmpty)
 
         await client.requestFeature(feature, impressionId: fakeImpressionId)
 
@@ -642,11 +780,9 @@ final class CausalClientTests: XCTestCase {
         XCTAssertFalse(timer.isExpired, "session should be valid")
 
         // Verify cache saved features
-        isEmpty = await cache.isEmpty
-        XCTAssertFalse(isEmpty)
+        XCTAssertFalse(cache.isEmpty)
 
-        let count = await cache.count
-        XCTAssertEqual(count, 1)
+        XCTAssertEqual(cache.count, 1)
 
         // Assign new session
         let newSession = Session(deviceId: fakeDeviceId, required: 99)
@@ -661,7 +797,31 @@ final class CausalClientTests: XCTestCase {
 
     func test_defaultValues() async throws {
         let mockNetworkingClient = MockNetworkingClient()
-        let cache = await FeatureCache()
+        mockNetworkingClient.stubbedResponse = """
+        {
+            "session": {
+                "deviceId": "8EB5B974-6BDF-44ED-8D1B-C1215C3B0FA3",
+                "sessionId": "f45f7661-c338-4d24-9f00-1b02c3cf68f7",
+                "startTime": 1687298716527
+            },
+            "impressions": [
+                {
+                    "productId": "server product id",
+                    "baseOnly": "base",
+                    "customerData": {
+                        "zip": "02445",
+                        "productViews": 1,
+                        "lastViews": ["123", "456"]
+                    },
+                    "crosssellProductids": ["60745"],
+                    "nullable": "server nullable response",
+                    "_impressionId": "server impression id"
+                }
+            ]
+        }
+        """
+
+        let cache = FeatureCache()
         let initialSession = MockSession()
         let timer = SessionTimer()
         let client = CausalClient.fake(
@@ -675,15 +835,16 @@ final class CausalClientTests: XCTestCase {
 
         let crossSell1 = CrossSell(productId: "1234", price: price )
 
-        await client.requestFeature(crossSell1)
+        let result = await client.requestFeature(crossSell1)
+        XCTAssertNil(result)
 
         let body1 = try XCTUnwrap(mockNetworkingClient.receivedBodyString)
         XCTAssertTrue(body1.contains("another default"))
 
-        try await crossSell1.signalAndWaitEventA(client: client)
+        try await client.signalAndWait(featureEvent: crossSell1.event(.eventA()))
         XCTAssertTrue(mockNetworkingClient.receivedBodyString.contains("7777"))
 
-        try await crossSell1.signalAndWaitEventA(client: client, anInt: 8_888)
+        try await client.signalAndWait(featureEvent: crossSell1.event(.eventA(anInt: 8_888)))
         XCTAssertTrue(mockNetworkingClient.receivedBodyString.contains("8888"))
 
         let crossSell2 = CrossSell(productId: "1234", price: price, withDefault: "different value")

@@ -77,7 +77,7 @@ struct MockSession: SessionProtocol {
         self.deviceId
     }
 
-    var deviceId = fakeImpressionId
+    var deviceId = "MockDeviceId"
 
     var id: SessionId {
         "session" + self.deviceId
@@ -94,41 +94,29 @@ struct MockSession: SessionProtocol {
     func updateFrom(json: JSONObject) { }
 }
 
-final class MockFeature: FeatureProtocol, Equatable {
-    static let name = "mock feature"
+struct MockFeatureEvent: FeatureEvent {
+    static let featureName = "feature"
 
-    var id: String { Self.name }
+    static let name = "FeatureEvent"
 
-    var isActive = true
-
-    var impressionId: ImpressionId?
-
-    func args() throws -> JSONObject {
-        JSONObject()
-    }
-
-    func outputs() throws -> CausalLabsSDK.JSONObject {
-        JSONObject()
-    }
-
-    func update(outputJson: CausalLabsSDK.JSONObject, isActive: Bool) throws {
-
-    }
-
-    static func == (left: MockFeature, right: MockFeature) -> Bool {
-        left.id == right.id
-        && left.isActive == right.isActive
-        && left.impressionId == right.impressionId
+    func serialized() -> JSONObject {
+        [
+            "FeatureEventArg1": "value1",
+            "FeatureEventArg2": "value2"
+        ]
     }
 }
 
-struct MockEvent: EventProtocol {
-    static let featureName = "feature"
+struct MockSessionEvent: SessionEvent {
+    static let featureName = "session"
 
-    static let name = "event"
+    static let name = "SessionEvent"
 
     func serialized() -> JSONObject {
-        JSONObject()
+        [
+            "FeatureEventArg1": "value1",
+            "FeatureEventArg2": "value2"
+        ]
     }
 }
 
