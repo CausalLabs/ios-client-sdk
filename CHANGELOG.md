@@ -2,6 +2,13 @@
 
 The changelog for `CausalLabs/ios-client-sdk`. Also see the [releases](https://github.com/CausalLabs/ios-client-sdk/releases) on GitHub.
 
+## 0.11.0
+
+- Fixed and improved how the SDK handles Server Sent Events (SSE).
+- Added a public screen, `DeviceRegistrationView`, which can be embedded into debug builds allowing for easy registration of devices for local feature QA.
+- Added support for the [@off_by_default](https://tech.causallabs.io/docs/reference/FDL/keywords/#off_by_default) FDL keyword.
+- Updated the bundled example app to show a more complex integration and usage of the `DeviceRegistrationView` screen.
+
 ## 0.10.0
 
 - Improved event signaling contract allowing for a better autocomplete experience.

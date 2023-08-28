@@ -102,6 +102,9 @@ class BaseMockFeature {
             } else {
                 self.status = .on(outputs: cachedOutputs)
             }
+
+        case .defaultStatus:
+            self.status = .on(outputs: .defaultValues)
         }
     }
 

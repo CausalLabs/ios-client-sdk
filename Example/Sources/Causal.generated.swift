@@ -96,6 +96,7 @@ struct Session: SessionProtocol {
     }
 
     mutating func updateFrom(json: JSONObject) throws {
+        self._args = try decodeObject(from: json, to: _SessionArgs.self)
         self._outputs = try decodeObject(from: json, to: _SessionOutputs.self)
     }
 }
@@ -120,7 +121,7 @@ extension Session {
         var eventDetails: any SessionEvent {
             switch self {
             }
-        }
+        }     
     }
 }
 
@@ -202,10 +203,6 @@ final class RatingBox: FeatureProtocol {
 
     // MARK: FeatureProtocol
 
-    var id: FeatureId {
-        generateIdFrom(name: "RatingBox", args: self.args)
-    }
-
     func update(request: FeatureUpdateRequest) throws {
         switch request {
         case .off:
@@ -220,6 +217,9 @@ final class RatingBox: FeatureProtocol {
             } else {
                  self.status = .on(outputs: cachedOutputs)
             }
+
+        case .defaultStatus:
+            self.status = .on(outputs: .defaultValues)
         }
     }
 
@@ -260,22 +260,22 @@ extension RatingBox {
                 case .rating(let stars):
                     return Rating(stars: stars)
             }
-        }
+        }     
+    }
 
-        /// Occurs each time a rating is collected
-        struct Rating: FeatureEvent {
-            /// The name of the feature for which this event is associated.
-            public static let featureName = "RatingBox"
+    /// Occurs each time a rating is collected
+    struct Rating: FeatureEvent {
+        /// The name of the feature for which this event is associated.
+        public static let featureName = "RatingBox"
 
-            /// The name of this event.
-            public static let name = "Rating"
+        /// The name of this event.
+        public static let name = "Rating"
 
-            var stars: Int
+        var stars: Int
 
-            func serialized() throws -> JSONObject {
-                let json = try encodeObject(self)
-                return json
-            }
+        func serialized() throws -> JSONObject {
+            let json = try encodeObject(self)
+            return json
         }
     }
 }
@@ -286,9 +286,6 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
 
     /// Describes error states for this view model.
     enum ViewModelError: Swift.Error {
-        /// Indicates that the `feature` was not successfully requested.
-        case missingFeature
-
         /// Indicates that the `FeatureEventPayload` was not successfully generated.
         /// This normally happens if the feature is `off` or hasn't been successfully 
         /// requested yet.
@@ -307,59 +304,67 @@ final class RatingBoxViewModel: ObservableObject, FeatureViewModel {
         case on(outputs: RatingBox.Outputs)
     }
 
-    private var feature: RatingBox?
+    private let feature: RatingBox
     @Published private(set) var state: State = .loading
-
     private let client: CausalClientProtocol
-    private let featureArgs: RatingBox.Args
-    private let impressionId: ImpressionId
+    private var requestTask: Task<Void, Never>?
+    private var observerToken: ObserverToken?
 
     // MARK: Init
 
-    init(client: CausalClientProtocol = CausalClient.shared, product: String, impressionId: ImpressionId = .newId()) {
+    init(client: CausalClientProtocol = CausalClient.shared, product: String) {
         self.client = client
-        self.featureArgs = RatingBox.Args(
+        self.feature = RatingBox(
             product: product
         )
-        self.impressionId = impressionId
     }
 
     // MARK: Feature request
+    func onEvent(_ event: FeatureViewModelEvent) {
+        switch event {
+        case .onAppear:
+            self.onAppear()
+        case .onDisappear:
+            self.onDisappear()
+        }
+    }
 
-    @MainActor
-    func requestFeature() async {
-        let _feature = RatingBox(
-            product: self.featureArgs.product
-        )
+    private func onAppear() {
+        self.requestFeature()
 
-        self.state = .loading
-        let result = await client.requestFeature(_feature, impressionId: self.impressionId)
+        self.observerToken = try? self.client.addObserver(feature: self.feature) { [weak self] in 
+            self?.requestFeature()
+        }
+    }
 
-        if result == nil {
-            self.feature = _feature
-            switch _feature.status {
-                case let .on(outputs):
-                    self.state = .on(outputs: outputs)
-                case .off:
-                    self.state = .off
-                case .unrequested:
-                    self.state = .loading
+    private func onDisappear() {
+        self.requestTask?.cancel()
+        if let observerToken {
+            self.client.removeObserver(observerToken: observerToken)
+        }
+    }
+
+    private func requestFeature() {
+        requestTask?.cancel()
+        requestTask = Task { @MainActor [weak self] in 
+            guard let self else { return }
+            await self.client.requestFeature(feature)
+            guard !Task.isCancelled else { return }
+
+            switch self.feature.status {
+            case let .on(outputs):
+                self.state = .on(outputs: outputs)
+            case .off:
+                self.state = .off
+            case .unrequested:
+                self.state = .loading
             }            
-        } else {
-            // In the event of an error requesting the feature show default values.
-            // Note: Signaled events from this render will be dropped.
-            self.state = .on(outputs: RatingBox.Outputs.defaultValues)
         }
     }
 
     // MARK: Events
 
     func signal(event: RatingBox.Event, onError: ((Error) -> Void)? = nil) {
-        guard let feature else { 
-            onError?(ViewModelError.missingFeature)
-            return
-        }
-
         guard let featureEvent = feature.event(event) else {
             onError?(ViewModelError.missingFeatureEvent)
             return            
@@ -420,10 +425,6 @@ final class ProductInfo: FeatureProtocol {
 
     // MARK: FeatureProtocol
 
-    var id: FeatureId {
-        generateIdFrom(name: "ProductInfo", args: self.args)
-    }
-
     func update(request: FeatureUpdateRequest) throws {
         switch request {
         case .off:
@@ -438,6 +439,9 @@ final class ProductInfo: FeatureProtocol {
             } else {
                  self.status = .on(outputs: cachedOutputs)
             }
+
+        case .defaultStatus:
+            self.status = .on(outputs: .defaultValues)
         }
     }
 
@@ -472,7 +476,7 @@ extension ProductInfo {
         var eventDetails: any FeatureEvent {
             switch self {
             }
-        }
+        }     
     }
 }
 
@@ -482,9 +486,6 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
 
     /// Describes error states for this view model.
     enum ViewModelError: Swift.Error {
-        /// Indicates that the `feature` was not successfully requested.
-        case missingFeature
-
         /// Indicates that the `FeatureEventPayload` was not successfully generated.
         /// This normally happens if the feature is `off` or hasn't been successfully 
         /// requested yet.
@@ -503,57 +504,66 @@ final class ProductInfoViewModel: ObservableObject, FeatureViewModel {
         case on(outputs: ProductInfo.Outputs)
     }
 
-    private var feature: ProductInfo?
+    private let feature: ProductInfo
     @Published private(set) var state: State = .loading
-
     private let client: CausalClientProtocol
-    private let featureArgs: ProductInfo.Args
-    private let impressionId: ImpressionId
+    private var requestTask: Task<Void, Never>?
+    private var observerToken: ObserverToken?
 
     // MARK: Init
 
-    init(client: CausalClientProtocol = CausalClient.shared, impressionId: ImpressionId = .newId()) {
+    init(client: CausalClientProtocol = CausalClient.shared) {
         self.client = client
-        self.featureArgs = ProductInfo.Args(
+        self.feature = ProductInfo(
         )
-        self.impressionId = impressionId
     }
 
     // MARK: Feature request
+    func onEvent(_ event: FeatureViewModelEvent) {
+        switch event {
+        case .onAppear:
+            self.onAppear()
+        case .onDisappear:
+            self.onDisappear()
+        }
+    }
 
-    @MainActor
-    func requestFeature() async {
-        let _feature = ProductInfo(
-        )
+    private func onAppear() {
+        self.requestFeature()
 
-        self.state = .loading
-        let result = await client.requestFeature(_feature, impressionId: self.impressionId)
+        self.observerToken = try? self.client.addObserver(feature: self.feature) { [weak self] in 
+            self?.requestFeature()
+        }
+    }
 
-        if result == nil {
-            self.feature = _feature
-            switch _feature.status {
-                case let .on(outputs):
-                    self.state = .on(outputs: outputs)
-                case .off:
-                    self.state = .off
-                case .unrequested:
-                    self.state = .loading
+    private func onDisappear() {
+        self.requestTask?.cancel()
+        if let observerToken {
+            self.client.removeObserver(observerToken: observerToken)
+        }
+    }
+
+    private func requestFeature() {
+        requestTask?.cancel()
+        requestTask = Task { @MainActor [weak self] in 
+            guard let self else { return }
+            await self.client.requestFeature(feature)
+            guard !Task.isCancelled else { return }
+
+            switch self.feature.status {
+            case let .on(outputs):
+                self.state = .on(outputs: outputs)
+            case .off:
+                self.state = .off
+            case .unrequested:
+                self.state = .loading
             }            
-        } else {
-            // In the event of an error requesting the feature show default values.
-            // Note: Signaled events from this render will be dropped.
-            self.state = .on(outputs: ProductInfo.Outputs.defaultValues)
         }
     }
 
     // MARK: Events
 
     func signal(event: ProductInfo.Event, onError: ((Error) -> Void)? = nil) {
-        guard let feature else { 
-            onError?(ViewModelError.missingFeature)
-            return
-        }
-
         guard let featureEvent = feature.event(event) else {
             onError?(ViewModelError.missingFeatureEvent)
             return            
@@ -622,10 +632,6 @@ final class Feature2: FeatureProtocol {
 
     // MARK: FeatureProtocol
 
-    var id: FeatureId {
-        generateIdFrom(name: "Feature2", args: self.args)
-    }
-
     func update(request: FeatureUpdateRequest) throws {
         switch request {
         case .off:
@@ -640,6 +646,9 @@ final class Feature2: FeatureProtocol {
             } else {
                  self.status = .on(outputs: cachedOutputs)
             }
+
+        case .defaultStatus:
+            self.status = .on(outputs: .defaultValues)
         }
     }
 
@@ -680,22 +689,22 @@ extension Feature2 {
                 case .exampleEvent(let data):
                     return ExampleEvent(data: data)
             }
-        }
+        }     
+    }
 
-        /// Example event
-        struct ExampleEvent: FeatureEvent {
-            /// The name of the feature for which this event is associated.
-            public static let featureName = "Feature2"
+    /// Example event
+    struct ExampleEvent: FeatureEvent {
+        /// The name of the feature for which this event is associated.
+        public static let featureName = "Feature2"
 
-            /// The name of this event.
-            public static let name = "ExampleEvent"
+        /// The name of this event.
+        public static let name = "ExampleEvent"
 
-            var data: String
+        var data: String
 
-            func serialized() throws -> JSONObject {
-                let json = try encodeObject(self)
-                return json
-            }
+        func serialized() throws -> JSONObject {
+            let json = try encodeObject(self)
+            return json
         }
     }
 }
@@ -706,9 +715,6 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
 
     /// Describes error states for this view model.
     enum ViewModelError: Swift.Error {
-        /// Indicates that the `feature` was not successfully requested.
-        case missingFeature
-
         /// Indicates that the `FeatureEventPayload` was not successfully generated.
         /// This normally happens if the feature is `off` or hasn't been successfully 
         /// requested yet.
@@ -727,59 +733,67 @@ final class Feature2ViewModel: ObservableObject, FeatureViewModel {
         case on(outputs: Feature2.Outputs)
     }
 
-    private var feature: Feature2?
+    private let feature: Feature2
     @Published private(set) var state: State = .loading
-
     private let client: CausalClientProtocol
-    private let featureArgs: Feature2.Args
-    private let impressionId: ImpressionId
+    private var requestTask: Task<Void, Never>?
+    private var observerToken: ObserverToken?
 
     // MARK: Init
 
-    init(client: CausalClientProtocol = CausalClient.shared, exampleArg: String, impressionId: ImpressionId = .newId()) {
+    init(client: CausalClientProtocol = CausalClient.shared, exampleArg: String) {
         self.client = client
-        self.featureArgs = Feature2.Args(
+        self.feature = Feature2(
             exampleArg: exampleArg
         )
-        self.impressionId = impressionId
     }
 
     // MARK: Feature request
+    func onEvent(_ event: FeatureViewModelEvent) {
+        switch event {
+        case .onAppear:
+            self.onAppear()
+        case .onDisappear:
+            self.onDisappear()
+        }
+    }
 
-    @MainActor
-    func requestFeature() async {
-        let _feature = Feature2(
-            exampleArg: self.featureArgs.exampleArg
-        )
+    private func onAppear() {
+        self.requestFeature()
 
-        self.state = .loading
-        let result = await client.requestFeature(_feature, impressionId: self.impressionId)
+        self.observerToken = try? self.client.addObserver(feature: self.feature) { [weak self] in 
+            self?.requestFeature()
+        }
+    }
 
-        if result == nil {
-            self.feature = _feature
-            switch _feature.status {
-                case let .on(outputs):
-                    self.state = .on(outputs: outputs)
-                case .off:
-                    self.state = .off
-                case .unrequested:
-                    self.state = .loading
+    private func onDisappear() {
+        self.requestTask?.cancel()
+        if let observerToken {
+            self.client.removeObserver(observerToken: observerToken)
+        }
+    }
+
+    private func requestFeature() {
+        requestTask?.cancel()
+        requestTask = Task { @MainActor [weak self] in 
+            guard let self else { return }
+            await self.client.requestFeature(feature)
+            guard !Task.isCancelled else { return }
+
+            switch self.feature.status {
+            case let .on(outputs):
+                self.state = .on(outputs: outputs)
+            case .off:
+                self.state = .off
+            case .unrequested:
+                self.state = .loading
             }            
-        } else {
-            // In the event of an error requesting the feature show default values.
-            // Note: Signaled events from this render will be dropped.
-            self.state = .on(outputs: Feature2.Outputs.defaultValues)
         }
     }
 
     // MARK: Events
 
     func signal(event: Feature2.Event, onError: ((Error) -> Void)? = nil) {
-        guard let feature else { 
-            onError?(ViewModelError.missingFeature)
-            return
-        }
-
         guard let featureEvent = feature.event(event) else {
             onError?(ViewModelError.missingFeatureEvent)
             return            

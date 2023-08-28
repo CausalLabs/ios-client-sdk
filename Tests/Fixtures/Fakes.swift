@@ -42,10 +42,10 @@ extension HTTPURLResponse {
 }
 
 extension CausalError {
-    static func fakeNetwork() -> CausalError {
+    static func fakeNetwork(statusCode: Int = 500) -> CausalError {
         CausalError.networkResponse(
             request: URLRequest(url: URL(string: "http://causallabs.io")!),
-            response: HTTPURLResponse(),
+            response: HTTPURLResponse(url: URL(string: "http://causallabs.io")!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!,
             error: nil
         )
     }

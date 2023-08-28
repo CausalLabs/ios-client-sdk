@@ -19,9 +19,6 @@ public protocol FeatureProtocol: AnyObject {
     /// Indicates the current status of the feature 
     var status: FeatureStatus<Outputs> { get }
 
-    /// Uniquely identifies this feature.
-    var id: FeatureId { get }
-
     /// Update the instance of this feature
     /// - Warning This method is intended for `CausalClient` use only.
     func update(request: FeatureUpdateRequest) throws
@@ -43,5 +40,13 @@ extension FeatureProtocol {
     /// Helper instance method to expose the static feature name
     var name: String {
         Self.name
+    }
+
+    /// Generates a unique way to identify a feature.
+    func key() throws -> FeatureKey {
+        FeatureKey(
+            name: Self.name,
+            argsJson: try args.encodeToJSONObject()
+        )
     }
 }

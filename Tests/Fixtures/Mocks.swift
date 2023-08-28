@@ -119,11 +119,3 @@ struct MockSessionEvent: SessionEvent {
         ]
     }
 }
-
-final class MockFeatureViewModel: FeatureViewModel {
-    var stubbedRequestFeature: () -> Void = { }
-
-    func requestFeature() async {
-        self.stubbedRequestFeature()
-    }
-}
