@@ -63,21 +63,24 @@ public final class CausalClient: CausalClientProtocol {
         }
     }
 
-    private var previousSessionId: SessionId?
+    private enum DeviceRegistration {
+        case registered(deviceId: DeviceId)
+        case unregistered
+    }
 
     private let networkClient: Networking
-
     private let jsonProcessor: JSONProcessor
-
-    private let featureCache: FeatureCache
-
-    private let sessionTimer: SessionTimer
-
+    private let featureCache: FeatureCacheProtocol
+    private let sessionTimer: SessionTimerProtocol
     private let logger: Logger
-
     private let sseClientFactory: SSEClientFactoryProtocol
-
     private var sseClient: SSEClientProtocol?
+
+    /// Store for SSE observers
+    private let observerStore: ObserverStoreProtocol
+
+    /// Is the device registered and able to receive SSE updates?
+    private var deviceRegistration: DeviceRegistration = .unregistered
 
     /// Construct an instance of the `CausalClient` for use in your application.
     ///
@@ -99,9 +102,10 @@ public final class CausalClient: CausalClientProtocol {
 
     init(networkClient: Networking = NetworkClient(),
          jsonProcessor: JSONProcessor = JSONProcessor(),
-         featureCache: FeatureCache = FeatureCache(),
-         sessionTimer: SessionTimer = SessionTimer(),
+         featureCache: FeatureCacheProtocol = FeatureCache(),
+         sessionTimer: SessionTimerProtocol = SessionTimer(),
          sseClientFactory: SSEClientFactoryProtocol = SSEClientFactory(),
+         observerStore: ObserverStoreProtocol = ObserverStore(),
          logger: Logger = .shared
     ) {
         self.networkClient = networkClient
@@ -109,6 +113,7 @@ public final class CausalClient: CausalClientProtocol {
         self.featureCache = featureCache
         self.sessionTimer = sessionTimer
         self.sseClientFactory = sseClientFactory
+        self.observerStore = observerStore
         self.logger = logger
     }
 
@@ -141,45 +146,49 @@ public final class CausalClient: CausalClientProtocol {
         Impression Id: \(impressionId)
         """)
 
-        if !featureCache.isEmpty {
-            let cachedFeatures = featureCache.fetch(all: features)
-            if !cachedFeatures.isEmpty,
-               // ensure we fetched all requested features from the cache
-               cachedFeatures.count == features.count {
-
-                let signalTask = Task {
-                    try await _signalCachedFeatures(
-                        cachedFeatures,
-                        session: session,
-                        impressionId: impressionId
-                    )
-                }
-
+        // Check the Cache first.
+        do {
+            let cachedFeatures = try featureCache.fetch(all: features)
+            if !cachedFeatures.isEmpty {
                 logger.info("Hydrating from cached features with impression id: \(impressionId)")
 
                 // Hydrate each of the input feature instances with the data (outputs & isActive)
                 // from the cached value and update the impression id.
-                do {
-                    for (index, cachedFeature) in cachedFeatures.enumerated() {
-                        let inputFeature = features[index]
-                        try inputFeature.update(
-                            request: cachedFeature.updateRequest(newImpressionId: impressionId)
-                        )
-                    }
-                    try await signalTask.value
-                    return nil
-                } catch {
-                    logger.error("requestFeatures error", error: error)
-                    return error
+                for (index, cachedFeature) in cachedFeatures.enumerated() {
+                    let inputFeature = features[index]
+                    try inputFeature.update(
+                        request: cachedFeature.updateRequest(newImpressionId: impressionId)
+                    )
                 }
+
+                // Defer the signal call to enable a quick return of cached data.
+                defer {
+                    Task {
+                        do {
+                            try await _signalCachedFeatures(
+                                cachedFeatures,
+                                session: session,
+                                impressionId: impressionId
+                            )
+                        } catch {
+                            logger.error("requestFeatures error", error: error)
+                        }
+                    }
+                }
+
+                return nil
             }
+        } catch {
+            logger.error("requestFeatures error", error: error)
+            return error
         }
 
+        // No cached items - fetch from network
         let task = Task {
             let jsonData = try jsonProcessor.encodeRequestFeatures(
-                features: features,
-                session: session,
-                impressionId: impressionId
+                sessionArgsJson: try session.args(),
+                impressionId: impressionId,
+                featureKeys: try features.map { try $0.key() }
             )
 
             let responseData = try await networkClient.sendRequest(
@@ -189,14 +198,35 @@ public final class CausalClient: CausalClientProtocol {
                 body: jsonData
             )
 
-            let (updatedSession, updatedFeatures) = try jsonProcessor.decodeRequestFeatures(
-                response: responseData,
-                features: features,
-                session: session,
-                impressionId: impressionId
-            )
+            let response = try jsonProcessor.decodeRequestFeatures(response: responseData)
+            guard response.encodedFeatureStatuses.count == features.count else {
+                // Mismatch on feature requests and impressions.
+                throw CausalError.parseFailure(message: "Requested \(features.count) features, but received \(response.encodedFeatureStatuses.count) impressions.")
+            }
 
-            try _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
+            try _processRequestFeaturesResponse(response: response)
+
+            // Update the features in-place
+            var cacheItems = [FeatureCacheItem]()
+            for (index, feature) in features.enumerated() {
+                let key = try feature.key()
+                let impression = response.encodedFeatureStatuses[index]
+                cacheItems.append(FeatureCacheItem(key: key, status: impression))
+                // If an impression id is supplied then we should overwrite the feature
+                // outputs _impressionId with that value. If we do not have an impression
+                // id then this is being called as part of a cache fill and we should
+                // retain the _impressionId data that is returned from the server.
+                switch impression {
+                case .off:
+                    try feature.update(request: .off)
+
+                case let .on(impressionJson):
+                    try feature.update(request: .on(outputJson: impressionJson, impressionId: impressionId))
+                }
+            }
+
+            // Add items to the feature cache
+            featureCache.save(items: cacheItems)
         }
 
         do {
@@ -204,6 +234,16 @@ public final class CausalClient: CausalClientProtocol {
             return nil
         } catch {
             logger.error("requestFeatures error", error: error)
+
+            // In the case of an error update the features in-place with the default output values and return the error
+            for feature in features {
+                do {
+                    try feature.update(request: .defaultStatus)
+                } catch {
+                    logger.error("requestFeatures: Failed to update feature (\(feature.name)) with a default status", error: error)
+                }
+            }
+
             return error
         }
     }
@@ -245,9 +285,9 @@ public final class CausalClient: CausalClientProtocol {
 
         let task = Task {
             let jsonData = try jsonProcessor.encodeRequestFeatures(
-                features: featuresCopy,
-                session: session,
-                impressionId: nil
+                sessionArgsJson: try session.args(),
+                impressionId: nil,
+                featureKeys: try features.map { try $0.key() }
             )
 
             let responseData = try await networkClient.sendRequest(
@@ -257,14 +297,22 @@ public final class CausalClient: CausalClientProtocol {
                 body: jsonData
             )
 
-            let (updatedSession, updatedFeatures) = try jsonProcessor.decodeRequestFeatures(
-                response: responseData,
-                features: featuresCopy,
-                session: session,
-                impressionId: nil
-            )
+            let response = try jsonProcessor.decodeRequestFeatures(response: responseData)
+            guard response.encodedFeatureStatuses.count == features.count else {
+                // Mismatch on feature requests and impressions.
+                throw CausalError.parseFailure(message: "Requested \(features.count) features, but received \(response.encodedFeatureStatuses.count) impressions.")
+            }
 
-            try _updateSession(updatedSession, andSaveFeatures: updatedFeatures)
+            // Update the session
+            try _processRequestFeaturesResponse(response: response)
+
+            // Save the items into the cache
+            let cacheItems = try featuresCopy.enumerated().map { index, feature in
+                let key = try feature.key()
+                let impression = response.encodedFeatureStatuses[index]
+                return FeatureCacheItem(key: key, status: impression)
+            }
+            featureCache.save(items: cacheItems)
         }
 
         try await task.value
@@ -343,18 +391,27 @@ public final class CausalClient: CausalClientProtocol {
             )
         }
 
-        try await task.result.get()
+        do {
+            try await task.result.get()
+        } catch {
+            // Receiving a 410 status code while performing a signal indicates that the session is expired.
+            if case let .networkResponse(_, response, _) = error as? CausalError, response.statusCode == 410 {
+                sessionTimer.invalidate()
+            }
+
+            throw error
+        }
     }
 
     /// Signals a feature impression when reading features from the cache.
     private func _signalCachedFeatures(
-        _ cachedItems: [FeatureCache.CacheItem],
+        _ cachedItems: [FeatureCacheItem],
         session: any SessionProtocol,
         impressionId: ImpressionId
     ) async throws {
         logger.info("""
         Signaling cached features...
-        Features: \(cachedItems.map { $0.name })
+        Features: \(cachedItems.map { $0.key.name })
         Impression id: \(impressionId)
         """)
 
@@ -405,18 +462,31 @@ public final class CausalClient: CausalClientProtocol {
         featureCache.removeAll()
     }
 
-    /// Begins listening for server sent events.
+    /// Add an observer for the feature. The `handler` callback will be triggered if a Server Sent
+    /// Event (SSE) forces this feature's values to change. It is recommended to use the compiler
+    /// generated `FeatureViewModel`s as those will wire up QA observers automatically and
+    /// send impression events at the correct time.
     ///
-    /// - Warning: This is primarily intended for feature debugging and QA purposes
-    public func startSSE() {
-        sseClient?.start()
+    /// - Warning: Be sure to call the `removeObserver` method when your view disappears
+    ///     or your reference object de-initializes to prevent memory leaks.
+    ///
+    /// - Parameters:
+    ///   - feature: The feature instance to monitor for SSE updates.
+    ///   - handler: Callback which will be called then the input `feature` is updated by a
+    ///     Server Sent Event
+    ///
+    /// - Returns: An `ObserverToken` which can be used to remove the observer
+    public func addObserver(feature: any FeatureProtocol, handler: @escaping () -> Void) throws -> ObserverToken {
+        let token = observerStore.add(item: .init(featureKey: try feature.key(), handler: handler))
+        logger.info("Adding observer for feature '\(feature.name)' with token '\(token)'")
+        return token
     }
 
-    /// Ends listening for server sent events.
-    ///
-    /// - Warning: This is primarily intended for feature debugging and QA purposes
-    public func stopSSE() {
-        sseClient?.stop()
+    /// Remove the Server Sent Event (SSE) observer.
+    /// - Parameter observerToken: The `ObserverToken` returned when calling `addObserver`
+    public func removeObserver(observerToken: ObserverToken) {
+        logger.info("Removing observer with token '\(observerToken)'")
+        observerStore.remove(token: observerToken)
     }
 
     // MARK: Private
@@ -427,30 +497,31 @@ public final class CausalClient: CausalClientProtocol {
             logger.error("CausalClient.shared.session is nil", error: error)
             throw error
         }
-        return session
-    }
 
-    private func _clearCacheIfSessionExpiredOrKeepAlive() {
+        // If we have a session let's ensure that it is still valid
         if sessionTimer.isExpired {
-            logger.info("Session has expired. SessionId: \(session?.id ?? "nil")")
+            logger.info("Session has expired. Session Id: \(session.id)")
             clearCache()
             sessionTimer.start()
         } else {
             sessionTimer.keepAlive()
         }
+
+        return session
     }
 
-    private func _updateSession(
-        _ updatedSession: any SessionProtocol,
-        andSaveFeatures updatedFeatures: [any FeatureProtocol]
-    ) throws {
-        session = updatedSession
+    private func _processRequestFeaturesResponse(response: RequestFeaturesResponse) throws {
+        // Update the session arguments with the values in the response.
+        try session?.updateFrom(json: response.sessionJson)
 
-        // check expiration and clear cache *before* saving new features
-        _clearCacheIfSessionExpiredOrKeepAlive()
-        try featureCache.save(all: updatedFeatures)
+        if let persistentId = session?.persistentId, response.isDeviceRegistered {
+            deviceRegistration = .registered(deviceId: persistentId)
+        } else {
+            deviceRegistration = .unregistered
+        }
 
-        logger.info("Saved updated features: \(updatedFeatures)")
+        // In some cases the
+        _reinitializeSSEClientIfNeeded()
     }
 
     private func _reinitializeSSEClientIfNeeded() {
@@ -460,44 +531,102 @@ public final class CausalClient: CausalClientProtocol {
             return
         }
 
-        let isStarted = sseClient?.isStarted ?? false
+        // Only re-initialize the SSEClient if the impressionServer or persistentId changed.
+        guard case let .registered(registeredDeviceId) = deviceRegistration,
+              sseClient?.impressionServer != impressionServer,
+              sseClient?.persistentId != session.persistentId,
+              sseClient?.persistentId != registeredDeviceId else {
+            return
+        }
 
         sseClient?.stop()
 
-        sseClient = sseClientFactory.createClient(
-            impressionServer: impressionServer,
-            session: session) { [weak self] message in
-                self?._handleSSE(message: message)
-            }
-
-        // client was initially running, so restart
-        if isStarted {
-            sseClient?.start()
+        sseClient = sseClientFactory.createClient(impressionServer: impressionServer, session: session) { [weak self] message in
+            self?._processServerSentEvent(message: message)
         }
+
+        sseClient?.start()
     }
 
-    private func _handleSSE(message: SSEMessage) {
+    private func _processServerSentEvent(message: SSEMessage) {
         switch message {
         case .flushCache:
-            clearCache()
+            Task {
+                let discardedKeys = featureCache.removeAll()
+                do {
+                    try await _reloadCache(keys: discardedKeys)
+                } catch {
+                    logger.error("Error encountered while processing Server Sent Event", error: error)
+                }
+            }
 
         case .flushFeatures(let names):
-            featureCache.removeAllWithNames(names)
+            Task {
+                let discardedKeys = featureCache.removeAll(named: names)
+                do {
+                    try await _reloadCache(keys: discardedKeys)
+                } catch {
+                    logger.error("Error encountered while processing Server Sent Event", error: error)
+                }
+            }
 
         case .hello:
             break
         }
     }
+
+    private func _reloadCache(keys: [FeatureKey]) async throws {
+        let session = try _validateSession()
+
+        logger.info("""
+        Requesting SSE cache update...
+        Features: \(keys)
+        """)
+
+        let jsonData = try jsonProcessor.encodeRequestFeatures(
+            sessionArgsJson: try session.args(),
+            impressionId: nil,
+            featureKeys: keys
+        )
+
+        let responseData = try await networkClient.sendRequest(
+            baseURL: impressionServer,
+            endpoint: .features,
+            session: session,
+            body: jsonData
+        )
+
+        let response = try jsonProcessor.decodeRequestFeatures(response: responseData)
+        guard response.encodedFeatureStatuses.count == keys.count else {
+            // Mismatch on feature requests and impressions.
+            throw CausalError.parseFailure(message: "Requested \(keys.count) features, but received \(response.encodedFeatureStatuses.count) impressions.")
+        }
+
+        try _processRequestFeaturesResponse(response: response)
+
+        // Save the items into the cache
+        let cacheItems = keys.enumerated().map { index, key in
+            let impression = response.encodedFeatureStatuses[index]
+            return FeatureCacheItem(key: key, status: impression)
+        }
+        featureCache.save(items: cacheItems)
+
+        // Run the handlers
+        for observer in observerStore.fetch(keys: keys) {
+            observer()
+        }
+    }
 }
 
-private extension FeatureCache.CacheItem {
+private extension FeatureCacheItem {
     func updateRequest(newImpressionId: ImpressionId) -> FeatureUpdateRequest {
         switch status {
         case .off:
             return .off
 
-        case let .on(outputsJson, _):
+        case let .on(outputsJson):
             return .on(outputJson: outputsJson, impressionId: newImpressionId)
         }
     }
 }
+// swiftlint:disable:this file_length

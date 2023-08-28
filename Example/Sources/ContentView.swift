@@ -9,7 +9,7 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         NavigationStack {
-            ExampleView()
+            RatingBoxView()
                 .navigationTitle("Causal Labs Example")
                 .navigationBarTitleDisplayMode(.inline)
         }

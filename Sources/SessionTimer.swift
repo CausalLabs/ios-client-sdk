@@ -4,7 +4,7 @@
 
 import Foundation
 
-final class SessionTimer {
+final class SessionTimer: SessionTimerProtocol {
     /// Default duration is 30 min.
     var duration = TimeInterval(60 * 30)
 
@@ -31,8 +31,8 @@ final class SessionTimer {
     }
 }
 
-extension Date {
-    fileprivate static func now() -> Date {
+private extension Date {
+    static func now() -> Date {
         Date()
     }
 }

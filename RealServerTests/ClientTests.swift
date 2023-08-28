@@ -50,8 +50,8 @@ final class RealServerTests: XCTestCase {
 
         // Ensure that the cache was updated
         XCTAssertEqual(cache.count, 2)
-        XCTAssertTrue(cache.contains(feature1))
-        XCTAssertTrue(cache.contains(feature2))
+        XCTAssertTrue(try cache.contains(feature1))
+        XCTAssertTrue(try cache.contains(feature2))
         XCTAssertEqual(feature1.status, .unrequested)
         XCTAssertEqual(feature2.status, .unrequested)
 

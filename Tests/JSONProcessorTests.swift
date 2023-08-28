@@ -5,37 +5,63 @@
 @testable import CausalLabsSDK
 import XCTest
 
+private extension JSONObject {
+    static var mock: JSONObject {
+        [
+            "key1": "value1",
+            "key2": [
+                "key2.1": "value2.1"
+            ]
+        ]
+    }
+}
+
 final class JSONProcessorTests: XCTestCase {
 
-    let jsonProcessor = JSONProcessor()
+    private var sut: JSONProcessor!
 
-    func test_encode_requestFeatures() async throws {
-        let session = Session(deviceId: fakeDeviceId, required: 0)
-        let ratingBox = RatingBox(
-            productName: "name",
-            productPrice: 10.0
-        )
+    override func setUp() {
+        super.setUp()
+        sut = JSONProcessor()
+    }
 
-        let jsonData = try self.jsonProcessor.encodeRequestFeatures(
-            features: [ratingBox],
-            session: session,
-            impressionId: fakeImpressionId
+    func test_encodeRequestFeatures_SHOULD_constructRequestJSONWithImpressionId() async throws {
+        let jsonData = try sut.encodeRequestFeatures(
+            sessionArgsJson: .mock,
+            impressionId: "input_impression_id",
+            featureKeys: [
+                FeatureKey(name: "feature1", argsJson: .mock),
+                FeatureKey(name: "feature2", argsJson: .mock)
+            ]
         )
 
         let expectedJSON = """
         {
+          "version" : 2,
           "args" : {
-            "deviceId" : "\(fakeDeviceId)",
-            "required" : 0,
-            "withDefault" : "a default value"
+            "key1" : "value1",
+            "key2" : {
+              "key2.1" : "value2.1"
+            }
           },
-          "impressionId" : "\(fakeImpressionId)",
+          "impressionId" : "input_impression_id",
           "reqs" : [
             {
-              "name" : "RatingBox",
+              "name" : "feature1",
               "args" : {
-                "productName" : "name",
-                "productPrice" : 10
+                "key1" : "value1",
+                "key2" : {
+                  "key2.1" : "value2.1"
+                }
+              }
+            },
+            {
+              "name" : "feature2",
+              "args" : {
+                "key1" : "value1",
+                "key2" : {
+                  "key2.1" : "value2.1"
+                }
               }
             }
           ]
@@ -45,31 +71,42 @@ final class JSONProcessorTests: XCTestCase {
         XCTAssertEqual(jsonData.jsonString(), expectedJSON)
     }
 
-    func test_encode_requestFeatures_usingStaticSessionConstructor() async throws {
-        let session = Session.fromDeviceId(fakeDeviceId)
-        let ratingBox = RatingBox(
-            productName: "name",
-            productPrice: 10.0
-        )
-
-        let jsonData = try self.jsonProcessor.encodeRequestFeatures(
-            features: [ratingBox],
-            session: session,
-            impressionId: fakeImpressionId
+    func test_encodeRequestFeatures_SHOULD_constructRequestJSONWithoutImpressionId() async throws {
+        let jsonData = try sut.encodeRequestFeatures(
+            sessionArgsJson: .mock,
+            impressionId: nil,
+            featureKeys: [
+                FeatureKey(name: "feature1", argsJson: .mock),
+                FeatureKey(name: "feature2", argsJson: .mock)
+            ]
         )
 
         let expectedJSON = """
         {
+          "version" : 2,
           "args" : {
-            "deviceId" : "\(fakeDeviceId)"
+            "key1" : "value1",
+            "key2" : {
+              "key2.1" : "value2.1"
+            }
           },
-          "impressionId" : "\(fakeImpressionId)",
           "reqs" : [
             {
-              "name" : "RatingBox",
+              "name" : "feature1",
               "args" : {
-                "productName" : "name",
-                "productPrice" : 10
+                "key1" : "value1",
+                "key2" : {
+                  "key2.1" : "value2.1"
+                }
+              }
+            },
+            {
+              "name" : "feature2",
+              "args" : {
+                "key1" : "value1",
+                "key2" : {
+                  "key2.1" : "value2.1"
+                }
               }
             }
           ]
@@ -81,9 +118,9 @@ final class JSONProcessorTests: XCTestCase {
 
     func test_encode_signalEvent() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
-        let event = RatingBox.Event.Rating(stars: 5)
+        let event = RatingBox.Rating(stars: 5)
 
-        let jsonData = try self.jsonProcessor.encodeSignalEvent(
+        let jsonData = try sut.encodeSignalEvent(
             event: event,
             session: session,
             impressionId: fakeImpressionId
@@ -110,16 +147,18 @@ final class JSONProcessorTests: XCTestCase {
         let session = Session(deviceId: fakeDeviceId, required: 0)
 
         let outputs = MockFeatureA.Outputs(_impressionId: "old-impression-id", out1: "out", out2: 3)
-        let jsonData = try self.jsonProcessor.encodeSignalCachedFeatures(
+        let jsonData = try sut.encodeSignalCachedFeatures(
             cachedItems: [
-                FeatureCache.CacheItem(
-                    name: "OnFeature",
+                FeatureCacheItem(
+                    key: FeatureKey(name: "OnFeature", argsJson: [:]),
                     status: .on(
-                        outputsJson: outputs.encodeToJSONObject(),
-                        cachedImpressionId: "old-impression-id"
+                        outputsJson: outputs.encodeToJSONObject()
                     )
                 ),
-                FeatureCache.CacheItem(name: "OffFeature", status: .off)
+                FeatureCacheItem(
+                    key: FeatureKey(name: "OffFeature", argsJson: [:]),
+                    status: .off
+                )
             ],
             session: session,
             impressionId: fakeImpressionId
@@ -148,7 +187,7 @@ final class JSONProcessorTests: XCTestCase {
     func test_encode_keepAlive() async throws {
         let session = Session(deviceId: fakeDeviceId, required: 0)
 
-        let jsonData = try self.jsonProcessor.encodeKeepAlive(session: session)
+        let jsonData = try sut.encodeKeepAlive(session: session)
 
         let expectedJSON = """
         {
@@ -161,21 +200,16 @@ final class JSONProcessorTests: XCTestCase {
 
     func test_decodeData() async throws {
         let validData = String("{ \"status\" : \"ok\" }").data(using: .utf8)!
-        let json = try self.jsonProcessor.decode(data: validData)
+        let json = try sut.decode(data: validData)
         XCTAssertEqual(json, ["status": "ok"])
 
         let corruptData = Data()
-        XCTAssertThrowsError(try self.jsonProcessor.decode(data: corruptData))
+        XCTAssertThrowsError(try sut.decode(data: corruptData))
     }
 
-    func test_decodeRequestFeatures_WITH_impressionIdInResponse_nilInputImpressionId() async throws {
+    func test_decodeRequestFeatures_SHOULD_throwErrorWhenMissingSession() throws {
         let json = """
         {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
           "impressions": [
              {
                "_impressionId" : "\(fakeImpressionId)",
@@ -187,273 +221,12 @@ final class JSONProcessorTests: XCTestCase {
         """
 
         let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        let (_session, features) = try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: nil
-        )
-        let ratingBox = try XCTUnwrap(features.first as? RatingBox)
-
-        XCTAssertEqual(features.count, 1)
-        let session = try XCTUnwrap(_session as? Session)
-        XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.args.productName, "product name")
-        XCTAssertEqual(ratingBox.args.productPrice, 0)
-
-        guard case let .on(outputs) = ratingBox.status else {
-            XCTFail("Expected `on` case.")
-            return
-        }
-
-        XCTAssertEqual(outputs._impressionId, fakeImpressionId)
-        XCTAssertEqual(outputs.callToAction, "TRY THIS")
-        XCTAssertEqual(outputs.actionButton, "New Button")
-    }
-
-    func test_decodeRequestFeatures_WITH_impressionIdInResponse_nonNilInputImpressionId() async throws {
-        let json = """
-        {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
-          "impressions": [
-             {
-               "_impressionId" : "\(fakeImpressionId)",
-               "callToAction" : "TRY THIS",
-               "actionButton": "New Button"
-             }
-          ]
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        let inputImpressionId = "input impression id"
-        let (_session, features) = try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: inputImpressionId
-        )
-        let ratingBox = try XCTUnwrap(features.first as? RatingBox)
-
-        XCTAssertEqual(features.count, 1)
-        let session = try XCTUnwrap(_session as? Session)
-        XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.args.productName, "product name")
-        XCTAssertEqual(ratingBox.args.productPrice, 0)
-
-        guard case let .on(outputs) = ratingBox.status else {
-            XCTFail("Expected `on` status.")
-            return
-        }
-
-        XCTAssertEqual(outputs._impressionId, inputImpressionId)
-        XCTAssertEqual(outputs.callToAction, "TRY THIS")
-        XCTAssertEqual(outputs.actionButton, "New Button")
-    }
-
-    func test_decodeRequestFeatures_WITH_noImpressionIdInResponse_nilInputImpressionId() async throws {
-        let json = """
-        {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
-          "impressions": [
-             {
-               "callToAction" : "TRY THIS",
-               "actionButton": "New Button"
-             }
-          ]
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        let (_session, features) = try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: nil
-        )
-        let ratingBox = try XCTUnwrap(features.first as? RatingBox)
-
-        XCTAssertEqual(features.count, 1)
-        let session = try XCTUnwrap(_session as? Session)
-        XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.args.productName, "product name")
-        XCTAssertEqual(ratingBox.args.productPrice, 0)
-
-        guard case let .on(outputs) = ratingBox.status else {
-            XCTFail("Expected `on` status.")
-            return
-        }
-
-        XCTAssertNil(outputs._impressionId)
-        XCTAssertEqual(outputs.callToAction, "TRY THIS")
-        XCTAssertEqual(outputs.actionButton, "New Button")
-    }
-
-    func test_decodeRequestFeatures_WITH_noImpressionIdInResponse_nonNilInputImpressionId() async throws {
-        let json = """
-        {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
-          "impressions": [
-             {
-               "callToAction" : "TRY THIS",
-               "actionButton": "New Button"
-             }
-          ]
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        let inputImpressionId = "input impression id"
-        let (_session, features) = try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: inputImpressionId
-        )
-        let ratingBox = try XCTUnwrap(features.first as? RatingBox)
-
-        XCTAssertEqual(features.count, 1)
-        let session = try XCTUnwrap(_session as? Session)
-        XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.args.productName, "product name")
-        XCTAssertEqual(ratingBox.args.productPrice, 0)
-
-        guard case let .on(outputs) = ratingBox.status else {
-            XCTFail("Expected `on` status.")
-            return
-        }
-
-        XCTAssertEqual(outputs._impressionId, inputImpressionId)
-        XCTAssertEqual(outputs.callToAction, "TRY THIS")
-        XCTAssertEqual(outputs.actionButton, "New Button")
-    }
-
-    func test_decodeRequestFeatures_NonNilImpressionId() async throws {
-        let json = """
-        {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
-          "impressions": [
-             {
-               "impressionIds" : [
-                 "\(fakeImpressionId)"
-               ],
-               "callToAction" : "TRY THIS",
-               "actionButton": "New Button"
-             }
-          ]
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        let (_session, features) = try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: "passed impression id"
-        )
-        let ratingBox = try XCTUnwrap(features.first as? RatingBox)
-
-        XCTAssertEqual(features.count, 1)
-        let session = try XCTUnwrap(_session as? Session)
-        XCTAssertEqual(session.deviceId, "deviceId")
-        XCTAssertEqual(ratingBox.args.productName, "product name")
-        XCTAssertEqual(ratingBox.args.productPrice, 0)
-
-        guard case let .on(outputs) = ratingBox.status else {
-            XCTFail("Expected `on` status")
-            return
-        }
-
-        XCTAssertEqual(outputs._impressionId, "passed impression id")
-        XCTAssertEqual(outputs.callToAction, "TRY THIS")
-        XCTAssertEqual(outputs.actionButton, "New Button")
-    }
-
-    func test_decodeRequestFeatures_missingSession() async throws {
-        let json = """
-        {
-          "impressions": [
-             {
-               "impressionIds" : [
-                 "\(fakeImpressionId)"
-               ],
-               "callToAction" : "TRY THIS",
-               "actionButton": "New Button"
-             }
-          ]
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        XCTAssertThrowsError(try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: "passed impression id"
-        )) { error in
-            XCTAssertEqual(.parseFailure(message: "Unable to locate `session` in the response."), error as? CausalError)
+        XCTAssertThrowsError(try sut.decodeRequestFeatures(response: data)) { error in
+            XCTAssertEqual(error as? CausalError, .parseFailure(message: "Unable to locate `session` in the response."))
         }
     }
 
-    func test_decodeRequestFeatures_missingImpressions() async throws {
+    func test_decodeRequestFeatures_SHOULD_throwErrorWhenMissingImpressions() throws {
         let json = """
         {
           "session": {
@@ -465,54 +238,12 @@ final class JSONProcessorTests: XCTestCase {
         """
 
         let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        XCTAssertThrowsError(try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: "passed impression id"
-        )) { error in
-            XCTAssertEqual(.parseFailure(message: "Unable to locate `impressions` in the response."), error as? CausalError)
+        XCTAssertThrowsError(try sut.decodeRequestFeatures(response: data)) { error in
+            XCTAssertEqual(error as? CausalError, .parseFailure(message: "Unable to locate `impressions` in the response."))
         }
     }
 
-    func test_decodeRequestFeatures_emptyImpressions() async throws {
-        let json = """
-        {
-          "session": {
-             "deviceId" : "\(fakeDeviceId)",
-             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
-             "startTime" : 1684278833067
-          },
-          "impressions": []
-        }
-        """
-
-        let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        XCTAssertThrowsError(try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: "passed impression id"
-        )) { error in
-            XCTAssertEqual(.parseFailure(message: "Requested 1 features, but received 0 impressions."), error as? CausalError)
-        }
-    }
-
-    func test_decodeRequestFeatures_unknownImpressionData() async throws {
+    func test_decodeRequestFeatures_SHOULD_throwErrorWhenInvalidImpressionDataSupplied() throws {
         let json = """
         {
           "session": {
@@ -521,27 +252,112 @@ final class JSONProcessorTests: XCTestCase {
              "startTime" : 1684278833067
           },
           "impressions": [
-            "test",
+             {
+               "_impressionId" : "\(fakeImpressionId)",
+               "callToAction" : "TRY THIS",
+               "actionButton": "New Button"
+             },
+             "invalid"
           ]
         }
         """
 
         let data = try XCTUnwrap(json.data(using: .utf8))
-
-        let initialSession = Session(deviceId: "deviceId", required: 0)
-        let initialRatingBox = RatingBox(
-            productName: "product name",
-            productPrice: 0
-        )
-
-        XCTAssertThrowsError(try self.jsonProcessor.decodeRequestFeatures(
-            response: data,
-            features: [initialRatingBox],
-            session: initialSession,
-            impressionId: "passed impression id"
-        )) { error in
-            XCTAssertEqual(.parseFailure(message: "Received unknown impression data: test"), error as? CausalError)
+        XCTAssertThrowsError(try sut.decodeRequestFeatures(response: data)) { error in
+            XCTAssertEqual(error as? CausalError, .parseFailure(message: "Received unknown impression data: invalid"))
         }
     }
 
+    func test_decodeRequestFeatures_SHOULD_returnParsedResponseWithRegisteredDevice() throws {
+        let json = """
+        {
+          "session": {
+             "deviceId" : "\(fakeDeviceId)",
+             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
+             "startTime" : 1684278833067
+          },
+          "impressions": [
+            "OFF",
+             {
+               "_impressionId" : "\(fakeImpressionId)",
+               "callToAction" : "TRY THIS",
+               "actionButton": "New Button"
+             },
+            "OFF"
+          ],
+          "registered": true
+        }
+        """
+
+        let data = try XCTUnwrap(json.data(using: .utf8))
+        let response = try sut.decodeRequestFeatures(response: data)
+        XCTAssertEqual(
+            response,
+            RequestFeaturesResponse(
+                isDeviceRegistered: true,
+                sessionJson: [
+                    "deviceId": fakeDeviceId,
+                    "sessionId": "89096d5b-fd42-4dd5-bec3-faa31579d388",
+                    "startTime": 1_684_278_833_067
+                ],
+                encodedFeatureStatuses: [
+                    .off,
+                    .on(
+                        outputsJson: [
+                            "_impressionId": fakeImpressionId,
+                            "callToAction": "TRY THIS",
+                            "actionButton": "New Button"
+                        ]
+                    ),
+                    .off
+                ]
+            )
+        )
+    }
+
+    func test_decodeRequestFeatures_SHOULD_returnParsedResponseWithoutRegisteredDevice() throws {
+        let json = """
+        {
+          "session": {
+             "deviceId" : "\(fakeDeviceId)",
+             "sessionId" : "89096d5b-fd42-4dd5-bec3-faa31579d388",
+             "startTime" : 1684278833067
+          },
+          "impressions": [
+            "OFF",
+             {
+               "_impressionId" : "\(fakeImpressionId)",
+               "callToAction" : "TRY THIS",
+               "actionButton": "New Button"
+             },
+            "OFF"
+          ]
+        }
+        """
+
+        let data = try XCTUnwrap(json.data(using: .utf8))
+        let response = try sut.decodeRequestFeatures(response: data)
+        XCTAssertEqual(
+            response,
+            RequestFeaturesResponse(
+                isDeviceRegistered: false,
+                sessionJson: [
+                    "deviceId": fakeDeviceId,
+                    "sessionId": "89096d5b-fd42-4dd5-bec3-faa31579d388",
+                    "startTime": 1_684_278_833_067
+                ],
+                encodedFeatureStatuses: [
+                    .off,
+                    .on(
+                        outputsJson: [
+                            "_impressionId": fakeImpressionId,
+                            "callToAction": "TRY THIS",
+                            "actionButton": "New Button"
+                        ]
+                    ),
+                    .off
+                ]
+            )
+        )
+    }
 }

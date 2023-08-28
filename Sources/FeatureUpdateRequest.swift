@@ -17,4 +17,7 @@ public enum FeatureUpdateRequest {
 
     /// Update this feature to be off (inactive)
     case off
+
+    /// Update this feature to the default status. This can either be `off` or `on` with the default Output values.
+    case defaultStatus
 }

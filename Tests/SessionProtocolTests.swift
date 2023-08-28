@@ -42,11 +42,10 @@ final class SessionProtocolTests: XCTestCase {
         )
     }
 
-    func test_updateFromJSON() throws {
+    func test_updateFrom_SHOULD_updateSessionArguments() throws {
         var session = Session(deviceId: fakeDeviceId, required: 0)
-
-        // Empty JSON should leave default values set
-        try session.updateFrom(json: JSONObject())
         XCTAssertEqual(session.deviceId, fakeDeviceId)
+        try session.updateFrom(json: ["deviceId": "newDeviceId"])
+        XCTAssertEqual(session.deviceId, "newDeviceId")
     }
 }

@@ -1,4 +1,3 @@
-
 """
 Wraps a rating box that we can put on various product pages
 to collect ratings from our users
@@ -8,7 +7,7 @@ feature RatingBox {
         "The product that we are collecting ratings for"
         product: String!
     }
-    
+
     output {
         "The text next to the stars that prompts the visitor to rate the product"
         callToAction: String! = "Rate this product!"

@@ -24,18 +24,14 @@ xcodebuild clean build \
 
 make lint
 
-# some iOS only developers won't have the server built and running
-# TODO: set up a shared environment to hit for these tests
-if [ -n "${CAUSAL_EMAIL:-}" ]; then
-    ./scripts/start-servers.sh
+./scripts/start-servers.sh
 
-    xcodebuild clean test \
-        -project CausalLabsSDK.xcodeproj \
-        -scheme RealServerTests \
-        -destination "$DEST" | xcpretty
+xcodebuild clean test \
+    -project CausalLabsSDK.xcodeproj \
+    -scheme RealServerTests \
+    -destination "$DEST" | xcpretty
 
-    # shutdown servers
-    ../../regression/kill-all.sh
-fi
+# shutdown servers
+../../regression/kill-all.sh
 
 echo "All iOS tests passed!"

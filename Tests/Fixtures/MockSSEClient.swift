@@ -41,8 +41,15 @@ final class MockSSEClientFactory: SSEClientFactoryProtocol {
 }
 
 final class MockSSEClient: SSEClientProtocol {
+    var impressionServer: URL {
+        receivedImpressionServer
+    }
 
-    var receivedImpressionServer: URL?
+    var persistentId: DeviceId? {
+        receivedSession?.persistentId
+    }
+
+    var receivedImpressionServer: URL
     var receivedSession: (any SessionProtocol)?
     var receivedMessageHandler: SSEMessageHandler?
 

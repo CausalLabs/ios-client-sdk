@@ -20,29 +20,38 @@ final class FeatureProtocolTests: XCTestCase {
         XCTAssertNil(ratingBox.args.productDescription)
     }
 
-    func test_id() {
+    func test_key() {
         let ratingBox = RatingBox(
             productName: "name",
             productPrice: 10.0
         )
 
         XCTAssertEqual(
-            ratingBox.id,
-            #"{"args":{"productName":"name","productPrice":10},"name":"RatingBox"}"#
+            try ratingBox.key(),
+            FeatureKey(name: "RatingBox", argsJson: ["productName": "name", "productPrice": 10])
         )
 
         let productDisplay = ProductDisplay(productName: "name", price: Price(currency: .USD, amount: 25))
         XCTAssertEqual(
-            productDisplay.id,
-            #"{"args":{"price":{"amount":25,"currency":"USD"},"productName":"name"},"name":"ProductDisplay"}"#
+            try productDisplay.key(),
+            FeatureKey(
+                name: "ProductDisplay",
+                argsJson: [
+                    "productName": "name",
+                    "price": [
+                        "currency": "USD",
+                        "amount": 25
+                    ] as JSONObject
+                ]
+            )
         )
     }
 
-    func test_id_withNoArgs() {
+    func test_key_withNoArgs() {
         let productInfo = ProductInfo()
         XCTAssertEqual(
-            productInfo.id,
-            #"{"args":{},"name":"ProductInfo"}"#
+            try productInfo.key(),
+            FeatureKey(name: "ProductInfo", argsJson: [:])
         )
     }
 
@@ -143,6 +152,22 @@ final class FeatureProtocolTests: XCTestCase {
         XCTAssertEqual(ratingBox.status, .off)
     }
 
+    func test_update_SHOULD_updateWithDefaultStatusOn() throws {
+        let ratingBox = RatingBox(
+            productName: "name",
+            productPrice: 10.0,
+            productDescription: "description"
+        )
+        try ratingBox.update(request: .defaultStatus)
+        XCTAssertEqual(ratingBox.status, .on(outputs: .defaultValues))
+    }
+
+    func test_update_SHOULD_updateWithDefaultStatusOff() throws {
+        let crossSell = CrossSellDefaultOff(productId: "123")
+        try crossSell.update(request: .defaultStatus)
+        XCTAssertEqual(crossSell.status, .off)
+    }
+
     func test_event_SHOULD_bundleInputEventWithImpressionId() throws {
         let ratingBox = RatingBox(
             productName: "name",
@@ -160,7 +185,7 @@ final class FeatureProtocolTests: XCTestCase {
         try ratingBox.update(request: .on(outputJson: updatedJSON, impressionId: "new_impression_id"))
 
         let result = ratingBox.event(.rating(stars: 3))
-        XCTAssertEqual(try result?.event.serialized(), try RatingBox.Event.Rating(stars: 3).serialized())
+        XCTAssertEqual(try result?.event.serialized(), try RatingBox.Rating(stars: 3).serialized())
         XCTAssertEqual(result?.impressionId, "new_impression_id")
     }
 }

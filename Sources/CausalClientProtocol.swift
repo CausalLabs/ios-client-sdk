@@ -100,15 +100,25 @@ public protocol CausalClientProtocol {
     /// - Warning: This should rarely be used and is primarily intended for debugging.
     func clearCache()
 
-    /// Begins listening for server sent events.
+    /// Add an observer for the feature. The `handler` callback will be triggered if a Server Sent
+    /// Event (SSE) forces this feature's values to change. It is recommended to use the compiler
+    /// generated `FeatureViewModel`s as those will wire up QA observers automatically and
+    /// send impression events at the correct time.
     ///
-    /// - Warning: This is primarily intended for feature debugging and QA purposes
-    func startSSE()
+    /// - Warning: Be sure to call the `removeObserver` method when your view disappears
+    ///     or your reference object de-initializes to prevent memory leaks.
+    ///
+    /// - Parameters:
+    ///   - feature: The feature instance to monitor for SSE updates.
+    ///   - handler: Callback which will be called then the input `feature` is updated by a
+    ///     Server Sent Event
+    ///
+    /// - Returns: An `ObserverToken` which can be used to remove the observer
+    func addObserver(feature: any FeatureProtocol, handler: @escaping () -> Void) throws -> ObserverToken
 
-    /// Ends listening for server sent events.
-    ///
-    /// - Warning: This is primarily intended for feature debugging and QA purposes
-    func stopSSE()
+    /// Remove the Server Sent Event (SSE) observer.
+    /// - Parameter observerToken: The `ObserverToken` returned when calling `addObserver`
+    func removeObserver(observerToken: ObserverToken)
 }
 
 public extension CausalClientProtocol {

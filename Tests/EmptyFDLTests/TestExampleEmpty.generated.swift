@@ -96,6 +96,7 @@ struct Session: SessionProtocol {
     }
 
     mutating func updateFrom(json: JSONObject) throws {
+        self._args = try decodeObject(from: json, to: _SessionArgs.self)
         self._outputs = try decodeObject(from: json, to: _SessionOutputs.self)
     }
 }
@@ -120,7 +121,7 @@ extension Session {
         var eventDetails: any SessionEvent {
             switch self {
             }
-        }
+        }     
     }
 }
 
